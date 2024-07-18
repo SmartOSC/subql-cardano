@@ -70,8 +70,11 @@ export class ProjectService extends BaseProjectService<
   }
 
   protected async getBlockTimestamp(height: number): Promise<Date> {
-    const block = await getBlockByHeight(this.apiService.api, height);
-    return getTimestamp(block);
+    // TODO: implement call to cardano util
+    // const block = await getBlockByHeight(this.apiService.api, height);
+    // return getTimestamp(block);
+
+    return new Date();
   }
 
   protected onProjectChange(project: SubqueryProject): void | Promise<void> {

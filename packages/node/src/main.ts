@@ -13,8 +13,8 @@ initLogger(
   argv.logLevel as string | undefined,
 );
 
-const { setProfiler } = require('@subql/node-core');
-setProfiler(argv.profiler);
+// const { setProfiler } = require('@subql/node-core');
+// setProfiler(argv.profiler);
 
 // Check for no subcommand
 if (!argv._[0]) {

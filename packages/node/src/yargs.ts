@@ -22,4 +22,10 @@ export const yargsOptions = yargsBuilder({
     const { reindexInit } = require('./subcommands/reindex.init');
     return reindexInit(targetHeight);
   },
+  runOptions: {
+    subquery: {
+      demandOption: true,
+      default: '../test',
+    },
+  },
 });

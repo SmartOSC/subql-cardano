@@ -360,6 +360,7 @@ export async function fetchRuntimeVersionRange(
   );
 }
 
+// TODO: Implement fetchBlocksBatches for Cardan
 export async function fetchBlocksBatches(
   api: ApiPromise,
   blockArray: number[],

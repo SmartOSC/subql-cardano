@@ -12,6 +12,7 @@ import {
 import { substrateHeaderToHeader } from '../utils/substrate';
 import { ApiService } from './api.service';
 import { BlockContent, LightBlockContent } from './types';
+import { cardanoBlockToHeader } from '../utils/cardano';
 
 @Injectable()
 export class UnfinalizedBlocksService extends BaseUnfinalizedBlocksService<
@@ -25,26 +26,22 @@ export class UnfinalizedBlocksService extends BaseUnfinalizedBlocksService<
     super(nodeConfig, storeCache);
   }
 
+  // Get latest height on cardano
   @mainThreadOnly()
   protected async getFinalizedHead(): Promise<Header> {
-    return substrateHeaderToHeader(
-      await this.apiService.api.rpc.chain.getHeader(
-        await this.apiService.api.rpc.chain.getFinalizedHead(),
-      ),
-    );
+    return this.apiService.api.getHeader();
   }
 
   // TODO: add cache here
   @mainThreadOnly()
   protected async getHeaderForHash(hash: string): Promise<Header> {
     return substrateHeaderToHeader(
-      await this.apiService.api.rpc.chain.getHeader(hash),
+      await this.apiService.api.rpc.getHeader(hash),
     );
   }
 
   @mainThreadOnly()
   protected async getHeaderForHeight(height: number): Promise<Header> {
-    const hash = await this.apiService.api.rpc.chain.getBlockHash(height);
-    return this.getHeaderForHash(hash.toHex());
+    return Promise.resolve(cardanoBlockToHeader(height));
   }
 }

@@ -318,7 +318,7 @@ export abstract class BaseFetchService<DS extends BaseDataSource, B extends IBlo
   }
 
   // Enqueue block sequentially
-  private async enqueueSequential(
+  protected async enqueueSequential(
     startBlockHeight: number,
     scaledBatchSize: number,
     latestHeight: number

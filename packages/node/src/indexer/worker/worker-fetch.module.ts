@@ -26,6 +26,7 @@ import { ProjectService } from '../project.service';
 import { WorkerRuntimeService } from '../runtime/workerRuntimeService';
 import { UnfinalizedBlocksService } from '../unfinalizedBlocks.service';
 import { WorkerService } from './worker.service';
+import { CardanoClientConnection } from '../cardano/cardanoClient.connection';
 
 /**
  * The alternative version of FetchModule for worker
@@ -44,7 +45,7 @@ import { WorkerService } from './worker.service';
       provide: ApiService,
       useFactory: async (
         project: SubqueryProject,
-        connectionPoolService: ConnectionPoolService<ApiPromiseConnection>,
+        connectionPoolService: ConnectionPoolService<CardanoClientConnection>,
         eventEmitter: EventEmitter2,
         nodeConfig: NodeConfig,
       ) => {

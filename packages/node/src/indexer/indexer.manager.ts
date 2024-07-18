@@ -33,18 +33,20 @@ import {
 } from '@subql/types';
 import { SubstrateProjectDs } from '../configure/SubqueryProject';
 import * as SubstrateUtil from '../utils/substrate';
-import { ApiService as SubstrateApiService } from './api.service';
+import { ApiService as CardanoApiService } from './api.service';
 import { DsProcessorService } from './ds-processor.service';
 import { DynamicDsService } from './dynamic-ds.service';
 import { ApiAt, BlockContent, isFullBlock, LightBlockContent } from './types';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
+import { CardanoSafeClient } from './cardano/cardanoClient.connection';
+import { CardanoClient } from './cardano/CardanoClient';
 
 @Injectable()
 export class IndexerManager extends BaseIndexerManager<
-  ApiPromise,
-  ApiAt,
+  CardanoClient,
+  CardanoSafeClient,
   BlockContent | LightBlockContent,
-  SubstrateApiService,
+  CardanoApiService,
   SubstrateDatasource,
   SubstrateCustomDataSource,
   typeof FilterTypeMap,
@@ -55,9 +57,9 @@ export class IndexerManager extends BaseIndexerManager<
   protected isCustomDs = isCustomDs;
 
   constructor(
-    apiService: SubstrateApiService,
+    apiService: CardanoApiService,
     nodeConfig: NodeConfig,
-    sandboxService: SandboxService<ApiAt, ApiPromise>,
+    sandboxService: SandboxService<CardanoClient, CardanoSafeClient>,
     dsProcessorService: DsProcessorService,
     dynamicDsService: DynamicDsService,
     unfinalizedBlocksService: UnfinalizedBlocksService,
@@ -89,11 +91,13 @@ export class IndexerManager extends BaseIndexerManager<
   private async getApi(
     block: LightBlockContent | BlockContent,
     runtimeVersion?: RuntimeVersion,
-  ): Promise<ApiAt> {
-    return this.apiService.getPatchedApi(
-      block.block.block.header,
-      runtimeVersion,
-    );
+  ): Promise<CardanoClient> {
+    // return this.apiService.getPatchedApi(
+    //   block.block.block.header,
+    //   runtimeVersion,
+    // );
+    // TODO: implement
+    return this.apiService.getSafeApi(0);
   }
 
   protected async indexBlockData(

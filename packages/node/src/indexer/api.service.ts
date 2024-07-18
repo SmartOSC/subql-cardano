@@ -32,13 +32,20 @@ import { SubstrateNetworkConfig } from '@subql/types';
 import { SubstrateNodeConfig } from '../configure/NodeConfig';
 import { SubqueryProject } from '../configure/SubqueryProject';
 import { isOnlyEventHandlers } from '../utils/project';
-import * as SubstrateUtil from '../utils/substrate';
+import * as CardanoUtil from '../utils/cardano';
+// import {
+//   ApiPromiseConnection,
+//   FetchFunc,
+//   GetFetchFunc,
+// } from './apiPromise.connection';
+import { ApiAt, BlockContent, LightBlockContent } from './types';
 import {
-  ApiPromiseConnection,
+  CardanoClientConnection,
+  CardanoSafeClient,
   FetchFunc,
   GetFetchFunc,
-} from './apiPromise.connection';
-import { ApiAt, BlockContent, LightBlockContent } from './types';
+} from './cardano/cardanoClient.connection';
+import { CardanoClient } from './cardano/CardanoClient';
 
 const NOT_SUPPORT = (name: string) => () => {
   throw new Error(`${name}() is not supported`);
@@ -106,10 +113,10 @@ async function updateChainTypesHasher(
 @Injectable()
 export class ApiService
   extends BaseApiService<
-    ApiPromise,
-    ApiAt,
+    CardanoClient,
+    CardanoSafeClient,
     IBlock<BlockContent>[] | IBlock<LightBlockContent>[],
-    ApiPromiseConnection
+    CardanoClientConnection
   >
   implements OnApplicationShutdown
 {
@@ -122,7 +129,7 @@ export class ApiService
 
   constructor(
     @Inject('ISubqueryProject') private project: SubqueryProject,
-    connectionPoolService: ConnectionPoolService<ApiPromiseConnection>,
+    connectionPoolService: ConnectionPoolService<CardanoClientConnection>,
     eventEmitter: EventEmitter2,
     nodeConfig: NodeConfig,
   ) {
@@ -184,27 +191,25 @@ export class ApiService
       network,
       //createConnection
       (endpoint) =>
-        ApiPromiseConnection.create(endpoint, this.fetchBlocksBatches, {
-          chainTypes,
-        }),
+        CardanoClientConnection.create(endpoint, this.fetchBlocksBatches()),
       //postConnectedHook
-      (connection: ApiPromiseConnection, endpoint: string, index: number) => {
-        const api = connection.unsafeApi;
-        api.on('connected', () => {
-          this.eventEmitter.emit(IndexerEvent.ApiConnected, {
-            value: 1,
-            apiIndex: index,
-            endpoint: endpoint,
-          });
-        });
-        api.on('disconnected', () => {
-          this.eventEmitter.emit(IndexerEvent.ApiConnected, {
-            value: 0,
-            apiIndex: index,
-            endpoint: endpoint,
-          });
-        });
-      },
+      // (connection: ApiPromiseConnection, endpoint: string, index: number) => {
+      //   const api = connection.unsafeApi;
+      //   api.on('connected', () => {
+      //     this.eventEmitter.emit(IndexerEvent.ApiConnected, {
+      //       value: 1,
+      //       apiIndex: index,
+      //       endpoint: endpoint,
+      //     });
+      //   });
+      //   api.on('disconnected', () => {
+      //     this.eventEmitter.emit(IndexerEvent.ApiConnected, {
+      //       value: 0,
+      //       apiIndex: index,
+      //       endpoint: endpoint,
+      //     });
+      //   });
+      // },
     );
 
     return this;
@@ -235,129 +240,130 @@ export class ApiService
       }
     }
 
-    const fetchFunc = skipTransactions
-      ? SubstrateUtil.fetchBlocksBatchesLight
-      : SubstrateUtil.fetchBlocksBatches;
+    // const fetchFunc = skipTransactions
+    //   ? SubstrateUtil.fetchBlocksBatchesLight
+    //   : SubstrateUtil.fetchBlocksBatches;
 
-    if (this.nodeConfig?.profiler) {
-      this._fetchBlocksFunction = profilerWrap(
-        fetchFunc,
-        'SubstrateUtil',
-        'fetchBlocksBatches',
-      );
-    } else {
-      this._fetchBlocksFunction = fetchFunc;
-    }
+    this._fetchBlocksFunction = CardanoUtil.fetchBlocksBatches;
+    // if (this.nodeConfig?.profiler) {
+    //   this._fetchBlocksFunction = profilerWrap(
+    //     fetchFunc,
+    //     'SubstrateUtil',
+    //     'fetchBlocksBatches',
+    //   );
+    // } else {
+    //   this._fetchBlocksFunction = fetchFunc;
+    // }
   }
 
-  get api(): ApiPromise {
+  get api(): CardanoClient {
     return this.unsafeApi;
   }
 
-  async getPatchedApi(
-    header: Header,
-    runtimeVersion?: RuntimeVersion,
-  ): Promise<ApiAt> {
-    this.currentBlockHash = header.hash.toString();
-    this.currentBlockNumber = header.number.toNumber();
+  // async getPatchedApi(
+  //   header: Header,
+  //   runtimeVersion?: RuntimeVersion,
+  // ): Promise<ApiAt> {
+  //   this.currentBlockHash = header.hash.toString();
+  //   this.currentBlockNumber = header.number.toNumber();
 
-    const api = this.api;
-    const apiAt = (await api.at(
-      this.currentBlockHash,
-      runtimeVersion,
-    )) as ApiAt;
-    this.patchApiRpc(api, apiAt);
-    return apiAt;
-  }
+  //   const api = this.api;
+  //   const apiAt = (await api.at(
+  //     this.currentBlockHash,
+  //     runtimeVersion,
+  //   )) as ApiAt;
+  //   this.patchApiRpc(api, apiAt);
+  //   return apiAt;
+  // }
 
-  private redecorateRpcFunction<T extends ApiTypes>(
-    original: RpcMethodResult<T, AnyFunction>,
-  ): RpcMethodResult<T, AnyFunction> {
-    const methodName = this.getRPCFunctionName(original);
-    if (original.meta.params) {
-      const hashIndex = original.meta.params.findIndex(
-        ({ isHistoric }) => isHistoric,
-      );
-      if (hashIndex > -1) {
-        const isBlockNumber =
-          original.meta.params[hashIndex].type === 'BlockNumber';
+  // private redecorateRpcFunction<T extends ApiTypes>(
+  //   original: RpcMethodResult<T, AnyFunction>,
+  // ): RpcMethodResult<T, AnyFunction> {
+  //   const methodName = this.getRPCFunctionName(original);
+  //   if (original.meta.params) {
+  //     const hashIndex = original.meta.params.findIndex(
+  //       ({ isHistoric }) => isHistoric,
+  //     );
+  //     if (hashIndex > -1) {
+  //       const isBlockNumber =
+  //         original.meta.params[hashIndex].type === 'BlockNumber';
 
-        const ret = (async (...args: any[]) => {
-          const argsClone = [...args];
+  //       const ret = (async (...args: any[]) => {
+  //         const argsClone = [...args];
 
-          if (isBlockNumber) {
-            if (argsClone[hashIndex] === undefined) {
-              argsClone[hashIndex] = this.currentBlockNumber;
-            } else if (argsClone[hashIndex] > this.currentBlockNumber) {
-              throw new Error(
-                `input block ${argsClone[hashIndex]} ahead of current block ${this.currentBlockNumber} is not supported`,
-              );
-            }
-          }
-          // is block hash
-          else {
-            if (argsClone[hashIndex] === undefined) {
-              argsClone[hashIndex] = this.currentBlockHash;
-            } else {
-              const atBlock = await this.api.rpc.chain.getBlock(
-                argsClone[hashIndex],
-              );
-              const atBlockNumber = atBlock.block.header.number.toNumber();
-              if (atBlockNumber > this.currentBlockNumber) {
-                throw new Error(
-                  `input block hash ${argsClone[hashIndex]} ahead of current block ${this.currentBlockNumber} is not supported`,
-                );
-              }
-            }
-          }
+  //         if (isBlockNumber) {
+  //           if (argsClone[hashIndex] === undefined) {
+  //             argsClone[hashIndex] = this.currentBlockNumber;
+  //           } else if (argsClone[hashIndex] > this.currentBlockNumber) {
+  //             throw new Error(
+  //               `input block ${argsClone[hashIndex]} ahead of current block ${this.currentBlockNumber} is not supported`,
+  //             );
+  //           }
+  //         }
+  //         // is block hash
+  //         else {
+  //           if (argsClone[hashIndex] === undefined) {
+  //             argsClone[hashIndex] = this.currentBlockHash;
+  //           } else {
+  //             const atBlock = await this.api.rpc.chain.getBlock(
+  //               argsClone[hashIndex],
+  //             );
+  //             const atBlockNumber = atBlock.block.header.number.toNumber();
+  //             if (atBlockNumber > this.currentBlockNumber) {
+  //               throw new Error(
+  //                 `input block hash ${argsClone[hashIndex]} ahead of current block ${this.currentBlockNumber} is not supported`,
+  //               );
+  //             }
+  //           }
+  //         }
 
-          return original(...argsClone);
-        }) as RpcMethodResult<T, AnyFunction>;
-        ret.raw = NOT_SUPPORT(`${methodName}.raw`);
-        ret.meta = original.meta;
-        return ret;
-      }
-    }
+  //         return original(...argsClone);
+  //       }) as RpcMethodResult<T, AnyFunction>;
+  //       ret.raw = NOT_SUPPORT(`${methodName}.raw`);
+  //       ret.meta = original.meta;
+  //       return ret;
+  //     }
+  //   }
 
-    const ret = NOT_SUPPORT(methodName) as unknown as RpcMethodResult<
-      T,
-      AnyFunction
-    >;
-    ret.raw = NOT_SUPPORT(`${methodName}.raw`);
-    ret.meta = original.meta;
-    return ret;
-  }
+  //   const ret = NOT_SUPPORT(methodName) as unknown as RpcMethodResult<
+  //     T,
+  //     AnyFunction
+  //   >;
+  //   ret.raw = NOT_SUPPORT(`${methodName}.raw`);
+  //   ret.meta = original.meta;
+  //   return ret;
+  // }
 
-  private patchApiRpc<T extends ApiTypes = 'promise'>(
-    api: ApiPromise,
-    apiAt: ApiAt,
-  ): void {
-    apiAt.rpc = Object.entries(api.rpc).reduce(
-      (acc, [module, rpcMethods]) => {
-        acc[module as keyof ApiPromise['rpc']] = Object.entries(
-          rpcMethods,
-        ).reduce(
-          (accInner, [name, rpcPromiseResult]) => {
-            accInner[name] = this.redecorateRpcFunction<T>(
-              rpcPromiseResult as RpcMethodResult<T, AnyFunction>,
-            );
-            return accInner;
-          },
-          {} as DecoratedRpcSection<T, any>,
-        ) as any;
-        return acc;
-      },
-      {} as ApiPromise['rpc'],
-    );
-  }
+  // private patchApiRpc<T extends ApiTypes = 'promise'>(
+  //   api: ApiPromise,
+  //   apiAt: ApiAt,
+  // ): void {
+  //   apiAt.rpc = Object.entries(api.rpc).reduce(
+  //     (acc, [module, rpcMethods]) => {
+  //       acc[module as keyof ApiPromise['rpc']] = Object.entries(
+  //         rpcMethods,
+  //       ).reduce(
+  //         (accInner, [name, rpcPromiseResult]) => {
+  //           accInner[name] = this.redecorateRpcFunction<T>(
+  //             rpcPromiseResult as RpcMethodResult<T, AnyFunction>,
+  //           );
+  //           return accInner;
+  //         },
+  //         {} as DecoratedRpcSection<T, any>,
+  //       ) as any;
+  //       return acc;
+  //     },
+  //     {} as ApiPromise['rpc'],
+  //   );
+  // }
 
-  private getRPCFunctionName<T extends 'promise' | 'rxjs'>(
-    original: RpcMethodResult<T, AnyFunction>,
-  ): string {
-    const ext = original.meta as unknown as DefinitionRpcExt;
+  // private getRPCFunctionName<T extends 'promise' | 'rxjs'>(
+  //   original: RpcMethodResult<T, AnyFunction>,
+  // ): string {
+  //   const ext = original.meta as unknown as DefinitionRpcExt;
 
-    return `api.rpc.${ext?.section ?? '*'}.${ext?.method ?? '*'}`;
-  }
+  //   return `api.rpc.${ext?.section ?? '*'}.${ext?.method ?? '*'}`;
+  // }
 
   // Overrides the super function because of the specVer
   async fetchBlocks(
@@ -368,21 +374,26 @@ export class ApiService
     return this.retryFetch(async () => {
       // Get the latest fetch function from the provider
       const apiInstance = this.connectionPoolService.api;
-      return apiInstance.fetchBlocks(heights, overallSpecVer);
+      return apiInstance.fetchBlocks(heights);
     }, numAttempts);
   }
 
-  // Polkadot uses genesis hash instead of chainId
-  protected assertChainId(
-    network: { chainId: string },
-    connection: ApiPromiseConnection,
-  ): void {
-    if (network.chainId !== connection.networkMeta.genesisHash) {
-      throw new MetadataMismatchError(
-        'ChainId',
-        network.chainId,
-        connection.networkMeta.genesisHash,
-      );
-    }
+  // // Polkadot uses genesis hash instead of chainId
+  // protected assertChainId(
+  //   network: { chainId: string },
+  //   connection: ApiPromiseConnection,
+  // ): void {
+  //   if (network.chainId !== connection.networkMeta.genesisHash) {
+  //     throw new MetadataMismatchError(
+  //       'ChainId',
+  //       network.chainId,
+  //       connection.networkMeta.genesisHash,
+  //     );
+  //   }
+  // }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async getSafeApi(height: number): Promise<CardanoSafeClient> {
+    return this.connectionPoolService.api.safeApi(height);
   }
 }

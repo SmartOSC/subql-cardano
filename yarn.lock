@@ -3381,6 +3381,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dcspark/cardano-multiplatform-lib-nodejs@npm:^5.3.1":
+  version: 5.3.1
+  resolution: "@dcspark/cardano-multiplatform-lib-nodejs@npm:5.3.1"
+  checksum: 655ef52584f42f1e540d7578df87c4070c7758d52d968e50d6ebd0008ff1e92368ab4ab77c94420e87011dfa7ff0a5acef0c34556e699403baaaca8ad78cbee0
+  languageName: node
+  linkType: hard
+
+"@dcspark/cardano-multiplatform-multiera-lib-nodejs@npm:^5.3.1":
+  version: 5.3.1
+  resolution: "@dcspark/cardano-multiplatform-multiera-lib-nodejs@npm:5.3.1"
+  checksum: 55b39dc9a0ac4bb6dc5ffdc9b5e217c2b2f43bd2214c48a058be200dc40df93d669ffdaaa0a2f05584b08b23da35205337a9778781e430d4e5de68dd5c37c35d
+  languageName: node
+  linkType: hard
+
 "@eslint-community/eslint-utils@npm:^4.2.0":
   version: 4.4.0
   resolution: "@eslint-community/eslint-utils@npm:4.4.0"
@@ -4069,6 +4083,52 @@ __metadata:
   bin:
     proto-loader-gen-types: build/bin/proto-loader-gen-types.js
   checksum: 399c1b8a4627f93dc31660d9636ea6bf58be5675cc7581e3df56a249369e5be02c6cd0d642c5332b0d5673bc8621619bc06fb045aa3e8f57383737b5d35930dc
+  languageName: node
+  linkType: hard
+
+"@harmoniclabs/bytestring@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@harmoniclabs/bytestring@npm:1.0.0"
+  dependencies:
+    "@harmoniclabs/uint8array-utils": ^1.0.0
+  checksum: b5f81db799fdf9a7f49dbd53e8357dabab2e5fe622de916b0e8c9d03dec58dafce0d55d89d66443fdd8e471714725ad9f5fd2aea14c9525aecf85fa996cac91a
+  languageName: node
+  linkType: hard
+
+"@harmoniclabs/cbor@npm:^1.1.5":
+  version: 1.3.0
+  resolution: "@harmoniclabs/cbor@npm:1.3.0"
+  dependencies:
+    "@harmoniclabs/bytestring": ^1.0.0
+    "@harmoniclabs/obj-utils": ^1.0.0
+    "@harmoniclabs/uint8array-utils": ^1.0.0
+  checksum: b35e42e70b4941a0b6aba63150d06c029b5b1ee0a2dad72de0fa298df944c3c53dbfd124b4c9d420e86a4de1b3a909da9de915e5a7ecf6e1581f3b58eea73927
+  languageName: node
+  linkType: hard
+
+"@harmoniclabs/obj-utils@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@harmoniclabs/obj-utils@npm:1.0.0"
+  checksum: c5ff333e159f9847ed4f0eba65c66a95332281296c29d40097d126e806042519f1176f80c492fef35827dcde46d4c608eb1b9df185cd202732d411f81e7d9626
+  languageName: node
+  linkType: hard
+
+"@harmoniclabs/ouroboros-miniprotocols-ts@npm:^0.0.2-dev7":
+  version: 0.0.2-dev7
+  resolution: "@harmoniclabs/ouroboros-miniprotocols-ts@npm:0.0.2-dev7"
+  dependencies:
+    "@harmoniclabs/cbor": ^1.1.5
+    "@harmoniclabs/obj-utils": ^1.0.0
+    "@harmoniclabs/uint8array-utils": ^1.0.0
+    "@types/node": ^20.1.7
+  checksum: 9629e370b607bff32b7531dd915f69ebea94f3e10a787e37a0d80e1a175f3651123175563d9532b2f267312d290598a050956353e5c69df7a38699d3964e457c
+  languageName: node
+  linkType: hard
+
+"@harmoniclabs/uint8array-utils@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@harmoniclabs/uint8array-utils@npm:1.0.0"
+  checksum: 2c0d27ddda43f7d015155fb9042a9429bb09847ae12fb948a48db9096f5c17e5723c60374585374972892db2fff74bf71061c9ad28db7b602bf0a5cb03b751f2
   languageName: node
   linkType: hard
 
@@ -6466,6 +6526,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@subql/node@workspace:packages/node"
   dependencies:
+    "@dcspark/cardano-multiplatform-lib-nodejs": ^5.3.1
+    "@dcspark/cardano-multiplatform-multiera-lib-nodejs": ^5.3.1
+    "@harmoniclabs/ouroboros-miniprotocols-ts": ^0.0.2-dev7
     "@nestjs/common": ^9.4.0
     "@nestjs/core": ^9.4.0
     "@nestjs/event-emitter": ^2.0.0
@@ -7524,6 +7587,15 @@ __metadata:
   version: 18.16.10
   resolution: "@types/node@npm:18.16.10"
   checksum: 1db35543ae98d4a98731037a11a9478480d1260ff3778da70b9a137a3023666d20bab1573b584c401058f76c0d5f7dfbbc157b70a059452e086c8da5639cc653
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^20.1.7":
+  version: 20.14.11
+  resolution: "@types/node@npm:20.14.11"
+  dependencies:
+    undici-types: ~5.26.4
+  checksum: 24396dea2bc803c2d2ebfdd31a3e6e93818ba1a5933d63cd0f64fad1e2955a8280ba09338a48ffe68cd84748eec8bee27135045f15661aa389656f67fe0b0924
   languageName: node
   linkType: hard
 
@@ -21265,6 +21337,13 @@ __metadata:
   version: 2.0.5
   resolution: "undefsafe@npm:2.0.5"
   checksum: f42ab3b5770fedd4ada175fc1b2eb775b78f609156f7c389106aafd231bfc210813ee49f54483d7191d7b76e483bc7f537b5d92d19ded27156baf57592eb02cc
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~5.26.4":
+  version: 5.26.5
+  resolution: "undici-types@npm:5.26.5"
+  checksum: 3192ef6f3fd5df652f2dc1cd782b49d6ff14dc98e5dced492aa8a8c65425227da5da6aafe22523c67f035a272c599bb89cfe803c1db6311e44bed3042fc25487
   languageName: node
   linkType: hard
 

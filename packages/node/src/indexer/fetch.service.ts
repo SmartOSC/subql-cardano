@@ -15,13 +15,15 @@ import {
 } from '@subql/node-core';
 import { SubstrateDatasource, SubstrateBlock } from '@subql/types';
 import { SubqueryProject } from '../configure/SubqueryProject';
-import { calcInterval, substrateHeaderToHeader } from '../utils/substrate';
+import { substrateHeaderToHeader } from '../utils/substrate';
 import { ApiService } from './api.service';
 import { ISubstrateBlockDispatcher } from './blockDispatcher/substrate-block-dispatcher';
 import { SubstrateDictionaryService } from './dictionary/substrateDictionary.service';
 import { ProjectService } from './project.service';
 import { RuntimeService } from './runtime/runtimeService';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
+import { calcInterval } from '../utils/cardano';
+import { CardanoClient } from './cardano/CardanoClient';
 
 const BLOCK_TIME_VARIANCE = 5000; //ms
 const INTERVAL_PERCENT = 0.9;
@@ -57,26 +59,21 @@ export class FetchService extends BaseFetchService<
     );
   }
 
-  get api(): ApiPromise {
+  get api(): CardanoClient {
     return this.apiService.unsafeApi;
   }
 
   protected async getFinalizedHeader(): Promise<Header> {
-    const finalizedHash = await this.api.rpc.chain.getFinalizedHead();
-    const finalizedHeader = await this.api.rpc.chain.getHeader(finalizedHash);
-    return substrateHeaderToHeader(finalizedHeader);
+    return this.api.getHeader();
   }
 
   protected async getBestHeight(): Promise<number> {
-    const bestHeader = await this.api.rpc.chain.getHeader();
-    return bestHeader.number.toNumber();
+    return (await this.api.getHeader()).blockHeight;
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
   protected async getChainInterval(): Promise<number> {
-    const chainInterval = calcInterval(this.api)
-      .muln(INTERVAL_PERCENT)
-      .toNumber();
+    const chainInterval = calcInterval(this.api);
 
     return Math.min(BLOCK_TIME_VARIANCE, chainInterval);
   }

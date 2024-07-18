@@ -9,6 +9,7 @@ import { SubstrateBlock } from '@subql/types';
 import * as SubstrateUtil from '../../utils/substrate';
 import { ApiService } from '../api.service';
 import { SpecVersion } from '../dictionary';
+import { CardanoClient } from '../cardano/CardanoClient';
 export const SPEC_VERSION_BLOCK_GAP = 100;
 type GetLatestFinalizedHeight = () => number;
 
@@ -41,8 +42,8 @@ export abstract class BaseRuntimeService {
     this.latestFinalizedHeight = getLatestFinalizedHeight();
   }
 
-  get api(): ApiPromise {
-    return this.apiService.api;
+  get api(): CardanoClient {
+    return this.apiService.unsafeApi;
   }
 
   getSpecFromMap(
@@ -58,58 +59,65 @@ export abstract class BaseRuntimeService {
     return spec ? Number(spec.id) : undefined;
   }
 
+  // TODO: Cardano can remove?
   async getSpecFromApi(height: number): Promise<number> {
-    const parentBlockHash = await this.api.rpc.chain.getBlockHash(
-      Math.max(height - 1, 0),
-    );
-    const runtimeVersion =
-      await this.api.rpc.state.getRuntimeVersion(parentBlockHash);
-    const specVersion = runtimeVersion.specVersion.toNumber();
-    return specVersion;
+    // startTip: 163541
+    // startBlockHash: 6e465338ce45a180998c10d06a1bb86ca038e49d06ac3ddd244e3c73af3a3acc
+    // const parentBlockHash = await this.apiService.api.getBlockHashByPoint(
+    //   163541,
+    //   '6e465338ce45a180998c10d06a1bb86ca038e49d06ac3ddd244e3c73af3a3acc',
+    // );
+    // const runtimeVersion =
+    //   await this.api.rpc.state.getRuntimeVersion(parentBlockHash);
+    // const specVersion = runtimeVersion.specVersion.toNumber();
+    return 0;
   }
 
   @profiler()
   async prefetchMeta(height: number): Promise<void> {
-    const blockHash = await this.api.rpc.chain.getBlockHash(height);
-    if (
-      this.parentSpecVersion !== undefined &&
-      this.specVersionMap &&
-      this.specVersionMap.length !== 0
-    ) {
-      const parentSpecVersion = this.specVersionMap.find(
-        (spec) => Number(spec.id) === this.parentSpecVersion,
-      );
-      if (parentSpecVersion === undefined) {
-        await SubstrateUtil.prefetchMetadata(this.api, blockHash);
-      } else {
-        for (const specVersion of this.specVersionMap) {
-          if (
-            (parentSpecVersion.end !== null
-              ? specVersion.start > parentSpecVersion.end
-              : true) &&
-            specVersion.start <= height
-          ) {
-            const blockHash = await this.api.rpc.chain.getBlockHash(
-              specVersion.start,
-            );
-            await SubstrateUtil.prefetchMetadata(this.api, blockHash);
-          }
-        }
-      }
-    } else {
-      await SubstrateUtil.prefetchMetadata(this.api, blockHash);
-    }
+    // const blockHash = await this.api.rpc.chain.getBlockHash(height);
+    // if (
+    //   this.parentSpecVersion !== undefined &&
+    //   this.specVersionMap &&
+    //   this.specVersionMap.length !== 0
+    // ) {
+    //   const parentSpecVersion = this.specVersionMap.find(
+    //     (spec) => Number(spec.id) === this.parentSpecVersion,
+    //   );
+    //   if (parentSpecVersion === undefined) {
+    //     await SubstrateUtil.prefetchMetadata(this.api, blockHash);
+    //   } else {
+    //     for (const specVersion of this.specVersionMap) {
+    //       if (
+    //         (parentSpecVersion.end !== null
+    //           ? specVersion.start > parentSpecVersion.end
+    //           : true) &&
+    //         specVersion.start <= height
+    //       ) {
+    //         const blockHash = await this.api.rpc.chain.getBlockHash(
+    //           specVersion.start,
+    //         );
+    //         await SubstrateUtil.prefetchMetadata(this.api, blockHash);
+    //       }
+    //     }
+    //   }
+    // } else {
+    //   await SubstrateUtil.prefetchMetadata(this.api, blockHash);
+    // }
+    return Promise.resolve();
   }
 
   async getRuntimeVersion(block: SubstrateBlock): Promise<RuntimeVersion> {
-    if (
-      !this.currentRuntimeVersion ||
-      this.currentRuntimeVersion.specVersion.toNumber() !== block.specVersion
-    ) {
-      this.currentRuntimeVersion = await this.api.rpc.state.getRuntimeVersion(
-        block.block.header.parentHash,
-      );
-    }
-    return this.currentRuntimeVersion;
+    // if (
+    //   !this.currentRuntimeVersion ||
+    //   this.currentRuntimeVersion.specVersion.toNumber() !== block.specVersion
+    // ) {
+    //   this.currentRuntimeVersion = await this.api.rpc.state.getRuntimeVersion(
+    //     block.block.header.parentHash,
+    //   );
+    // }
+    // return this.currentRuntimeVersion;
+
+    return Promise.resolve(null as unknown as RuntimeVersion);
   }
 }

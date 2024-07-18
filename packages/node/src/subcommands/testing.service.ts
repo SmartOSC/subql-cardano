@@ -58,21 +58,20 @@ export class TestingService extends BaseTestingService<
     return [testContext.close.bind(testContext), testContext.get(TestRunner)];
   }
 
-  async indexBlock(
-    block: IBlock<BlockContent | LightBlockContent>,
-    handler: string,
-    indexerManager: IndexerManager,
-    apiService: ApiService,
-  ): Promise<void> {
-    const runtimeVersion =
-      await apiService.unsafeApi.rpc.state.getRuntimeVersion(
-        block.getHeader().blockHash,
-      );
-
-    await indexerManager.indexBlock(
-      block,
-      this.getDsWithHandler(handler),
-      runtimeVersion,
-    );
-  }
+  // async indexBlock(
+  //   block: IBlock<BlockContent | LightBlockContent>,
+  //   handler: string,
+  //   indexerManager: IndexerManager,
+  //   apiService: ApiService,
+  // ): Promise<void> {
+  //   const runtimeVersion =
+  //     await apiService.unsafeApi.rpc.state.getRuntimeVersion(
+  //       block.getHeader().blockHash,
+  //     );
+  //   await indexerManager.indexBlock(
+  //     block,
+  //     this.getDsWithHandler(handler),
+  //     runtimeVersion,
+  //   );
+  // }
 }

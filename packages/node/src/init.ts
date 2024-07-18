@@ -37,8 +37,21 @@ export async function bootstrap(): Promise<void> {
     const apiService = app.get(ApiService);
 
     // Initialise async services, we do this here rather than in factories, so we can capture one off events
+    /**
+     * Load config endpoint, datasources, function fetchBlockBatches(Handler for Cardano)
+     * 1. Custom Cardano Connection
+     */
     await apiService.init();
+    /**
+     * Initialise project
+     * 1. Setup schema stuff
+     * 2. Init Worker
+     */
     await projectService.init();
+    /**
+     * Fetch Block Data By Height
+     * 1. Handler fetch block data
+     */
     await fetchService.init(projectService.startHeight);
 
     app.enableShutdownHooks();

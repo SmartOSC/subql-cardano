@@ -19,6 +19,9 @@
     "subql-node": "./bin/run"
   },
   "dependencies": {
+    "@dcspark/cardano-multiplatform-lib-nodejs": "^5.3.1",
+    "@dcspark/cardano-multiplatform-multiera-lib-nodejs": "^5.3.1",
+    "@harmoniclabs/ouroboros-miniprotocols-ts": "^0.0.2-dev7",
     "@nestjs/common": "^9.4.0",
     "@nestjs/core": "^9.4.0",
     "@nestjs/event-emitter": "^2.0.0",

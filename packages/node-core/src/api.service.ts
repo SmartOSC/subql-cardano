@@ -31,7 +31,7 @@ export abstract class ApiService<
   A = any,
   SA = any,
   B extends Array<any> = any[],
-  Connection extends IApiConnectionSpecific<A, SA, B> = IApiConnectionSpecific<A, SA, B>
+  Connection extends IApiConnectionSpecific<A, SA, B> = IApiConnectionSpecific<A, SA, B>,
 > implements IApi<A, SA, B>
 {
   constructor(

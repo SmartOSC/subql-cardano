@@ -29,7 +29,7 @@ import {HostUnfinalizedBlocks, hostUnfinalizedBlocksKeys} from './worker.unfinal
 
 export type DefaultWorkerFunctions<
   ApiConnection /* ApiPromiseConnection*/,
-  DS extends BaseDataSource = BaseDataSource
+  DS extends BaseDataSource = BaseDataSource,
 > = HostCache & HostStore & HostDynamicDS<DS> & HostUnfinalizedBlocks & HostConnectionPoolState<ApiConnection>;
 
 let workerApp: INestApplication;
@@ -142,7 +142,7 @@ export function createWorkerHost<
   T extends AsyncMethods,
   H extends AsyncMethods & {initWorker: (height?: number) => Promise<void>},
   ApiConnection /* ApiPromiseConnection*/,
-  DS extends BaseDataSource = BaseDataSource
+  DS extends BaseDataSource = BaseDataSource,
 >(extraWorkerFns: (keyof T)[], extraHostFns: H): WorkerHost<DefaultWorkerFunctions<ApiConnection, DS> & T> {
   // Register these functions to be exposed to worker host
   return WorkerHost.create<DefaultWorkerFunctions<ApiConnection, DS> & T, IBaseIndexerWorker & H>(
@@ -176,7 +176,7 @@ export async function createIndexerWorker<
   T extends IBaseIndexerWorker,
   ApiConnection extends IApiConnectionSpecific<any, any, any> /*ApiPromiseConnection*/ /*ApiPromiseConnection*/,
   B,
-  DS extends BaseDataSource = BaseDataSource
+  DS extends BaseDataSource = BaseDataSource,
 >(
   workerPath: string,
   workerFns: (keyof Omit<T, keyof IBaseIndexerWorker>)[],

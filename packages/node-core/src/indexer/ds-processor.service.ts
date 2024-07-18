@@ -27,7 +27,7 @@ function isSecondLayerHandlerProcessor_0_0_0<
   F extends Record<string, unknown>,
   E,
   API,
-  DS extends BaseCustomDataSource = BaseCustomDataSource
+  DS extends BaseCustomDataSource = BaseCustomDataSource,
 >(
   processor:
     | SecondLayerHandlerProcessor_0_0_0<IM, K, F, E, DS, API>
@@ -43,7 +43,7 @@ function isSecondLayerHandlerProcessor_1_0_0<
   F extends Record<string, unknown>,
   E,
   API,
-  DS extends BaseCustomDataSource = BaseCustomDataSource
+  DS extends BaseCustomDataSource = BaseCustomDataSource,
 >(
   processor:
     | SecondLayerHandlerProcessor_0_0_0<IM, K, F, E, DS, API>
@@ -58,7 +58,7 @@ export function asSecondLayerHandlerProcessor_1_0_0<
   F extends Record<string, unknown>,
   E,
   API,
-  DS extends BaseCustomDataSource = BaseCustomDataSource
+  DS extends BaseCustomDataSource = BaseCustomDataSource,
 >(
   processor:
     | SecondLayerHandlerProcessor_0_0_0<IM, K, F, E, DS, API>
@@ -99,7 +99,7 @@ class DsPluginSandbox<P> extends Sandbox {
 export function getDsProcessor<
   P,
   DS extends BaseDataSource = BaseDataSource,
-  CDS extends DS & BaseCustomDataSource = DS & BaseCustomDataSource
+  CDS extends DS & BaseCustomDataSource = DS & BaseCustomDataSource,
 >(
   ds: CDS,
   isCustomDs: (ds: any) => boolean,
@@ -133,7 +133,7 @@ export function getDsProcessor<
 export abstract class BaseDsProcessorService<
   DS extends BaseDataSource = BaseDataSource,
   CDS extends DS & BaseCustomDataSource = DS & BaseCustomDataSource,
-  P extends DsProcessor<CDS> = DsProcessor<CDS>
+  P extends DsProcessor<CDS> = DsProcessor<CDS>,
 > {
   private processorCache: Record<string, P> = {};
 
