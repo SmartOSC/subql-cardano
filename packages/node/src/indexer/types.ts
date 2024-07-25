@@ -1,6 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0
 
+import { MultiEraBlock as CardanoBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { ApiPromise } from '@polkadot/api';
 import { ApiDecoration } from '@polkadot/api/types';
 import type { HexString } from '@polkadot/util/types';
@@ -18,6 +19,25 @@ export interface BlockContent {
   events: SubstrateEvent[];
 }
 
+export interface Attribute {
+  readonly key: string;
+  readonly value: string;
+}
+export interface Event {
+  readonly type: string;
+  readonly attributes: readonly Attribute[];
+}
+
+export interface CardanoEvent {
+  idx: number;
+  event: Event;
+}
+
+export interface CardanoBlockContent {
+  block: CardanoBlock;
+  events: SubstrateEvent[];
+}
+
 export interface LightBlockContent {
   block: BlockHeader; // A subset of SubstrateBlock
   events: LightSubstrateEvent[];
@@ -28,7 +48,7 @@ export type BestBlocks = Record<number, HexString>;
 export type ApiAt = ApiDecoration<'promise'> & { rpc: ApiPromise['rpc'] };
 
 export function isFullBlock(
-  block: BlockContent | LightBlockContent,
-): block is BlockContent {
-  return (block as BlockContent).extrinsics !== undefined;
+  block: CardanoBlockContent | LightBlockContent,
+): block is CardanoBlockContent {
+  return (block as CardanoBlockContent) !== undefined;
 }

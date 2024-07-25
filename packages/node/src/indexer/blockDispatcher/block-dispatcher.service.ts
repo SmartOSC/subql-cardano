@@ -20,14 +20,22 @@ import { SubqueryProject } from '../../configure/SubqueryProject';
 import { ApiService } from '../api.service';
 import { IndexerManager } from '../indexer.manager';
 import { RuntimeService } from '../runtime/runtimeService';
-import { BlockContent, isFullBlock, LightBlockContent } from '../types';
+import {
+  BlockContent,
+  CardanoBlockContent,
+  isFullBlock,
+  LightBlockContent,
+} from '../types';
 
 /**
  * @description Intended to behave the same as WorkerBlockDispatcherService but doesn't use worker threads or any parallel processing
  */
 @Injectable()
 export class BlockDispatcherService
-  extends BlockDispatcher<BlockContent | LightBlockContent, SubstrateDatasource>
+  extends BlockDispatcher<
+    CardanoBlockContent | LightBlockContent,
+    SubstrateDatasource
+  >
   implements OnApplicationShutdown
 {
   private _runtimeService?: RuntimeService;
@@ -57,7 +65,9 @@ export class BlockDispatcherService
       project,
       async (
         blockNums: number[],
-      ): Promise<IBlock<BlockContent>[] | IBlock<LightBlockContent>[]> => {
+      ): Promise<
+        IBlock<CardanoBlockContent>[] | IBlock<LightBlockContent>[]
+      > => {
         const specChanged = await this.runtimeService.specChanged(
           blockNums[blockNums.length - 1],
         );
@@ -89,16 +99,16 @@ export class BlockDispatcherService
   }
 
   protected async indexBlock(
-    block: IBlock<BlockContent> | IBlock<LightBlockContent>,
+    block: IBlock<CardanoBlockContent> | IBlock<LightBlockContent>,
   ): Promise<ProcessBlockResponse> {
     const runtimeVersion = !isFullBlock(block.block)
       ? undefined
-      : await this.runtimeService.getRuntimeVersion(block.block.block);
+      : await this.runtimeService.getRuntimeVersion(block.block);
 
     return this.indexerManager.indexBlock(
       block,
       await this.projectService.getDataSources(block.getHeader().blockHeight),
-      runtimeVersion,
+      // runtimeVersion,
     );
   }
 }

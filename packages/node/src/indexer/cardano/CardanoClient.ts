@@ -4,6 +4,7 @@ import { toHex } from '../utils/hex';
 import {
   BlockFetchBlock,
   BlockFetchClient,
+  BlockFetchNoBlocks,
   ChainSyncClient,
   IChainPoint,
   Multiplexer,
@@ -63,21 +64,31 @@ export class CardanoClient {
   getFinalizedHead(): Promise<Header> {
     return this.getHeader();
   }
-  async getBlockHashByPoint(
-    slotNumber: number,
-    blockHash: string,
-  ): Promise<string> {
+
+  async getBlocksByRangePoint(
+    fromChainPoint: IChainPoint,
+    toChainPoint: IChainPoint,
+  ): Promise<BlockFetchNoBlocks | BlockFetchBlock[]> {
     // Get latest tip -> point
-    const chainSyncClient = await this.miniClient.connectChainSyncClient();
-    const { tip: chainTip } = await chainSyncClient.findIntersect([
-      {
-        blockHeader: {
-          hash: blockHash,
-          slotNumber: slotNumber,
-        },
-      } as unknown as IChainPoint,
-    ]);
-    return Buffer.from(chainTip.point.blockHeader?.hash || []).toString('hex');
+    const blockFetchClient = await this.miniClient.connectBlockFetchClient();
+    const result = await blockFetchClient.requestRange(
+      fromChainPoint,
+      toChainPoint,
+    );
+
+    blockFetchClient.removeAllListeners();
+    blockFetchClient.mplexer.close();
+    this.disconnect();
+    return result;
+  }
+
+  async getBlockByPoint(
+    chainPoint: IChainPoint,
+  ): Promise<BlockFetchNoBlocks | BlockFetchBlock> {
+    const blockFetchClient = await this.miniClient.connectBlockFetchClient();
+    const block = await blockFetchClient.request(chainPoint);
+    this.disconnect();
+    return block;
   }
 
   disconnect(): void {

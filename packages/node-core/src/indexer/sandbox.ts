@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import {existsSync, readFileSync} from 'fs';
+import fs from 'fs';
 import path from 'path';
 import {SubqlTest} from '@subql/testing';
 import {Cache, Store} from '@subql/types-core';
@@ -13,7 +14,7 @@ import {NodeConfig} from '../configure/NodeConfig';
 import {getLogger} from '../logger';
 import {timeout} from '../utils';
 
-export const SANDBOX_DEFAULT_BUILTINS = ['assert', 'buffer', 'crypto', 'util', 'path', 'url', 'stream'];
+export const SANDBOX_DEFAULT_BUILTINS = ['assert', 'buffer', 'crypto', 'util', 'path', 'url', 'stream', 'fs'];
 
 export interface SandboxOption {
   cache?: Cache;
@@ -25,13 +26,14 @@ export interface SandboxOption {
 
 const DEFAULT_OPTION = (unsafe = false): NodeVMOptions => {
   return {
-    console: 'redirect',
-    wasm: unsafe,
+    console: 'inherit',
+    // wasm: unsafe,
+    wasm: true,
     sandbox: {atob},
     require: {
-      builtin: unsafe ? ['*'] : SANDBOX_DEFAULT_BUILTINS,
+      builtin: ['*'],
       external: true,
-      context: 'sandbox',
+      context: 'host',
     },
     wrapper: 'commonjs',
     sourceExtensions: ['js', 'cjs'],

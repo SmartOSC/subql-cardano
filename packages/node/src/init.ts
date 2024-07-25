@@ -14,6 +14,7 @@ import { ApiService } from './indexer/api.service';
 import { FetchService } from './indexer/fetch.service';
 import { ProjectService } from './indexer/project.service';
 import { yargsOptions } from './yargs';
+import { getChainTipByHeight } from './utils/cache';
 
 const pjson = require('../package.json');
 
@@ -41,6 +42,9 @@ export async function bootstrap(): Promise<void> {
      * Load config endpoint, datasources, function fetchBlockBatches(Handler for Cardano)
      * 1. Custom Cardano Connection
      */
+
+    // await getChainTipByHeight(6409);
+
     await apiService.init();
     /**
      * Initialise project

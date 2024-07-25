@@ -38,7 +38,12 @@ import * as CardanoUtil from '../utils/cardano';
 //   FetchFunc,
 //   GetFetchFunc,
 // } from './apiPromise.connection';
-import { ApiAt, BlockContent, LightBlockContent } from './types';
+import {
+  ApiAt,
+  BlockContent,
+  CardanoBlockContent,
+  LightBlockContent,
+} from './types';
 import {
   CardanoClientConnection,
   CardanoSafeClient,
@@ -115,7 +120,7 @@ export class ApiService
   extends BaseApiService<
     CardanoClient,
     CardanoSafeClient,
-    IBlock<BlockContent>[] | IBlock<LightBlockContent>[],
+    IBlock<CardanoBlockContent>[] | IBlock<CardanoBlockContent>[],
     CardanoClientConnection
   >
   implements OnApplicationShutdown
@@ -370,7 +375,7 @@ export class ApiService
     heights: number[],
     overallSpecVer?: number,
     numAttempts = MAX_RECONNECT_ATTEMPTS,
-  ): Promise<IBlock<LightBlockContent>[]> {
+  ): Promise<IBlock<CardanoBlockContent>[]> {
     return this.retryFetch(async () => {
       // Get the latest fetch function from the provider
       const apiInstance = this.connectionPoolService.api;

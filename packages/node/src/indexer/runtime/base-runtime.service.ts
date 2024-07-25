@@ -10,6 +10,7 @@ import * as SubstrateUtil from '../../utils/substrate';
 import { ApiService } from '../api.service';
 import { SpecVersion } from '../dictionary';
 import { CardanoClient } from '../cardano/CardanoClient';
+import { CardanoBlockContent, LightBlockContent } from '../types';
 export const SPEC_VERSION_BLOCK_GAP = 100;
 type GetLatestFinalizedHeight = () => number;
 
@@ -107,7 +108,9 @@ export abstract class BaseRuntimeService {
     return Promise.resolve();
   }
 
-  async getRuntimeVersion(block: SubstrateBlock): Promise<RuntimeVersion> {
+  async getRuntimeVersion(
+    block: CardanoBlockContent | LightBlockContent,
+  ): Promise<RuntimeVersion> {
     // if (
     //   !this.currentRuntimeVersion ||
     //   this.currentRuntimeVersion.specVersion.toNumber() !== block.specVersion

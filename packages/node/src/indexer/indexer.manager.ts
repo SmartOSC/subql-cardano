@@ -36,16 +36,23 @@ import * as SubstrateUtil from '../utils/substrate';
 import { ApiService as CardanoApiService } from './api.service';
 import { DsProcessorService } from './ds-processor.service';
 import { DynamicDsService } from './dynamic-ds.service';
-import { ApiAt, BlockContent, isFullBlock, LightBlockContent } from './types';
+import {
+  ApiAt,
+  BlockContent,
+  CardanoBlockContent,
+  isFullBlock,
+  LightBlockContent,
+} from './types';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
 import { CardanoSafeClient } from './cardano/cardanoClient.connection';
 import { CardanoClient } from './cardano/CardanoClient';
+import { MultiEraBlock as CardanoBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 
 @Injectable()
 export class IndexerManager extends BaseIndexerManager<
   CardanoClient,
   CardanoSafeClient,
-  BlockContent | LightBlockContent,
+  CardanoBlockContent | LightBlockContent,
   CardanoApiService,
   SubstrateDatasource,
   SubstrateCustomDataSource,
@@ -78,7 +85,7 @@ export class IndexerManager extends BaseIndexerManager<
 
   @profiler()
   async indexBlock(
-    block: IBlock<BlockContent | LightBlockContent>,
+    block: IBlock<CardanoBlockContent | LightBlockContent>,
     dataSources: SubstrateDatasource[],
     runtimeVersion?: RuntimeVersion,
   ): Promise<ProcessBlockResponse> {
@@ -89,7 +96,7 @@ export class IndexerManager extends BaseIndexerManager<
 
   // eslint-disable-next-line @typescript-eslint/require-await
   private async getApi(
-    block: LightBlockContent | BlockContent,
+    block: LightBlockContent | CardanoBlockContent,
     runtimeVersion?: RuntimeVersion,
   ): Promise<CardanoClient> {
     // return this.apiService.getPatchedApi(
@@ -101,32 +108,32 @@ export class IndexerManager extends BaseIndexerManager<
   }
 
   protected async indexBlockData(
-    blockContent: LightBlockContent | BlockContent,
+    blockContent: LightBlockContent | CardanoBlockContent,
     dataSources: SubstrateProjectDs[],
     getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
   ): Promise<void> {
     if (isFullBlock(blockContent)) {
-      const { block, events, extrinsics } = blockContent;
+      const { block, events } = blockContent;
       await this.indexBlockContent(block, dataSources, getVM);
 
       // Run initialization events
-      const initEvents = events.filter((evt) => evt.phase.isInitialization);
-      for (const event of initEvents) {
-        await this.indexEvent(event, dataSources, getVM);
-      }
+      // const initEvents = events.filter((evt) => evt.phase.isInitialization);
+      // for (const event of initEvents) {
+      //   await this.indexEvent(event, dataSources, getVM);
+      // }
 
-      for (const extrinsic of extrinsics) {
-        await this.indexExtrinsic(extrinsic, dataSources, getVM);
+      // for (const extrinsic of extrinsics) {
+      //   await this.indexExtrinsic(extrinsic, dataSources, getVM);
 
-        // Process extrinsic events
-        const extrinsicEvents = events
-          .filter((e) => e.extrinsic?.idx === extrinsic.idx)
-          .sort((a, b) => a.idx - b.idx);
+      //   // Process extrinsic events
+      //   const extrinsicEvents = events
+      //     .filter((e) => e.extrinsic?.idx === extrinsic.idx)
+      //     .sort((a, b) => a.idx - b.idx);
 
-        for (const event of extrinsicEvents) {
-          await this.indexEvent(event, dataSources, getVM);
-        }
-      }
+      //   for (const event of extrinsicEvents) {
+      //     await this.indexEvent(event, dataSources, getVM);
+      //   }
+      // }
 
       // Run finalization events
       const finalizeEvents = events.filter((evt) => evt.phase.isFinalization);
@@ -134,19 +141,19 @@ export class IndexerManager extends BaseIndexerManager<
         await this.indexEvent(event, dataSources, getVM);
       }
     } else {
-      for (const event of blockContent.events) {
-        await this.indexEvent(event, dataSources, getVM);
-      }
+      // for (const event of blockContent.events) {
+      //   await this.indexEvent(event, dataSources, getVM);
+      // }
     }
   }
 
   private async indexBlockContent(
-    block: SubstrateBlock,
+    block: CardanoBlock,
     dataSources: SubstrateProjectDs[],
     getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
   ): Promise<void> {
     for (const ds of dataSources) {
-      await this.indexData(SubstrateHandlerKind.Block, block, ds, getVM);
+      await this.indexData(SubstrateHandlerKind.CardanoBlock, block, ds, getVM);
     }
   }
 
@@ -181,12 +188,17 @@ export class IndexerManager extends BaseIndexerManager<
 
 const ProcessorTypeMap = {
   [SubstrateHandlerKind.Block]: isBlockHandlerProcessor,
+  [SubstrateHandlerKind.CardanoBlock]: isBlockHandlerProcessor,
   [SubstrateHandlerKind.Event]: isEventHandlerProcessor,
   [SubstrateHandlerKind.Call]: isCallHandlerProcessor,
 };
 
 const FilterTypeMap = {
   [SubstrateHandlerKind.Block]: (
+    block: SubstrateBlock,
+    filter?: SubstrateBlockFilter,
+  ) => !!SubstrateUtil.filterBlock(block, filter),
+  [SubstrateHandlerKind.CardanoBlock]: (
     block: SubstrateBlock,
     filter?: SubstrateBlockFilter,
   ) => !!SubstrateUtil.filterBlock(block, filter),

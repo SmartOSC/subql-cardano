@@ -21,6 +21,7 @@ import {
   SecondLayerHandlerProcessor_1_0_0,
   DsProcessor,
 } from '@subql/types-core';
+import {MultiEraBlock as CardanoBlock} from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import {LightSubstrateEvent, SubstrateBlock, SubstrateEvent, SubstrateExtrinsic} from './interfaces';
 
 export type RuntimeDatasourceTemplate = BaseTemplateDataSource<SubstrateDatasource>;
@@ -50,6 +51,10 @@ export enum SubstrateHandlerKind {
    * Handler for Substrate blocks.
    */
   Block = 'substrate/BlockHandler',
+  /**
+   * Handler for Substrate blocks.
+   */
+  CardanoBlock = 'cardano/BlockHandler',
 
   /**
    * Handler for Substrate extrinsic calls.
@@ -64,12 +69,14 @@ export enum SubstrateHandlerKind {
 
 export type RuntimeHandlerInputMap<T extends AnyTuple = AnyTuple> = {
   [SubstrateHandlerKind.Block]: SubstrateBlock;
+  [SubstrateHandlerKind.CardanoBlock]: CardanoBlock;
   [SubstrateHandlerKind.Event]: SubstrateEvent<T> | LightSubstrateEvent<T>;
   [SubstrateHandlerKind.Call]: SubstrateExtrinsic<T>;
 };
 
 type RuntimeFilterMap = {
   [SubstrateHandlerKind.Block]: SubstrateBlockFilter;
+  [SubstrateHandlerKind.CardanoBlock]: SubstrateBlockFilter;
   [SubstrateHandlerKind.Event]: SubstrateEventFilter;
   [SubstrateHandlerKind.Call]: SubstrateCallFilter;
 };
@@ -143,6 +150,12 @@ export interface SubstrateCallFilter extends SubstrateEventFilter {
 export type SubstrateBlockHandler = SubstrateCustomHandler<SubstrateHandlerKind.Block, SubstrateBlockFilter>;
 
 /**
+ * Represents a handler for Cardano blocks.
+ * @type {SubstrateCustomHandler<SubstrateHandlerKind.Block, SubstrateBlockFilter>}
+ */
+export type CardanoBlockHandler = SubstrateCustomHandler<SubstrateHandlerKind.CardanoBlock, SubstrateBlockFilter>;
+
+/**
  * Represents a handler for Substrate calls.
  * @type {SubstrateCustomHandler<SubstrateHandlerKind.Call, SubstrateCallFilter>}
  */
@@ -188,7 +201,11 @@ export interface SubstrateCustomHandler<K extends string = string, F = Record<st
  * Represents a runtime handler for Substrate, which can be a block handler, call handler, or event handler.
  * @type {SubstrateBlockHandler | SubstrateCallHandler | SubstrateEventHandler}
  */
-export type SubstrateRuntimeHandler = SubstrateBlockHandler | SubstrateCallHandler | SubstrateEventHandler;
+export type SubstrateRuntimeHandler =
+  | SubstrateBlockHandler
+  | SubstrateCallHandler
+  | SubstrateEventHandler
+  | CardanoBlockHandler;
 
 /**
  * Represents a handler for Substrate, which can be a runtime handler or a custom handler with unknown filter type.

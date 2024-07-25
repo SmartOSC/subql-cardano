@@ -2,35 +2,64 @@
 # Add the `@index` or `@index(unique: true)` annotation after any non-key field
 # https://academy.subquery.network/build/graphql.html#indexing-by-non-primary-key-field
 
-type BridgeEvent @entity {
-  id: ID!
-  sender: User!
-  receiver: User!
-  sourceChain: String
-  sourceChainTransaction: String
-  destinationChain: String
-  destinationChainTransaction: String
-  amount: BigInt
+enum EventType {
+  SendPacket
+  RecvPacket
+  WriteAck
+  AcknowledgePacket
+  TimeoutPacket
+  TimeoutPacketOnClose
+
+  ChannelOpenInit
+  ChannelOpenTry
+  ChannelOpenAck
+  ChannelOpenConfirm
+  ChannelCloseInit
+  ChannelCloseConfirm
+  ChannelClosed
+
+  ConnectionOpenInit
+  ConnectionOpenTry
+  ConnectionOpenAck
+  ConnectionOpenConfirm
+
+  CreateClient
+  UpdateClient
 }
 
-type EventEntity @entity {
+type CardanoTransfer @entity {
+  id: ID!
+  blockHeight: BigInt
+  txHash: String
+  fromAddress: String!
+  toAddress: String!
+  amount: String
+  denomination: String
+}
+
+type EventAttribute @entity {
+  id: ID!
+  key: String
+  value: String
+  event: Event
+}
+
+type Event @entity {
   id: ID!
   blockHeight: BigInt!
   txHash: String!
-  event: String!
+  type: EventType!
+  eventAttribute: [EventAttribute]! @derivedFrom(field: "event")
 }
 
-type Message @entity {
+type Client @entity {
   id: ID!
-  blockHeight: BigInt!
-  txHash: String!
-  event: String!
 }
 
-type User @entity {
-  id: ID! # Wallet Address
+type Connection @entity {
+  id: ID!
 }
 
-type CreateClient @entity {
+type Channel @entity {
   id: ID!
 }

@@ -13,6 +13,7 @@ import {
   SubstrateEventFilter,
   SubstrateEventHandler,
   SubstrateHandlerKind,
+  CardanoBlockHandler,
   SubstrateRuntimeDatasource,
   SubstrateRuntimeHandler,
   SubstrateCustomDatasource,
@@ -78,7 +79,7 @@ export class BlockHandler implements SubstrateBlockHandler {
   @ValidateNested()
   @Type(() => BlockFilter)
   filter?: SubstrateBlockFilter;
-  @IsEnum(SubstrateHandlerKind, {groups: [SubstrateHandlerKind.Block]})
+  @IsEnum(SubstrateHandlerKind, {groups: [SubstrateHandlerKind.Block, SubstrateHandlerKind.CardanoBlock]})
   kind!: SubstrateHandlerKind.Block;
   @IsString()
   handler!: string;
@@ -126,6 +127,8 @@ export class RuntimeMapping implements BaseMapping<SubstrateRuntimeHandler> {
         case SubstrateHandlerKind.Call:
           return plainToClass(CallHandler, handler);
         case SubstrateHandlerKind.Block:
+          return plainToClass(BlockHandler, handler);
+        case SubstrateHandlerKind.CardanoBlock:
           return plainToClass(BlockHandler, handler);
         default:
           throw new Error(`handler ${(handler as any).kind} not supported`);

@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0
 
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   BaseUnfinalizedBlocksService,
   Header,
@@ -11,12 +11,15 @@ import {
 } from '@subql/node-core';
 import { substrateHeaderToHeader } from '../utils/substrate';
 import { ApiService } from './api.service';
-import { BlockContent, LightBlockContent } from './types';
+import { BlockContent, CardanoBlockContent, LightBlockContent } from './types';
 import { cardanoBlockToHeader } from '../utils/cardano';
+import { getChainTipByHeight } from '../utils/cache';
+import { Block } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
+import { BlockFetchBlock } from '@harmoniclabs/ouroboros-miniprotocols-ts';
 
 @Injectable()
 export class UnfinalizedBlocksService extends BaseUnfinalizedBlocksService<
-  BlockContent | LightBlockContent
+  CardanoBlockContent | LightBlockContent
 > {
   constructor(
     private readonly apiService: ApiService,
@@ -42,6 +45,31 @@ export class UnfinalizedBlocksService extends BaseUnfinalizedBlocksService<
 
   @mainThreadOnly()
   protected async getHeaderForHeight(height: number): Promise<Header> {
-    return Promise.resolve(cardanoBlockToHeader(height));
+    // get point
+    const existedStartBlockHeight = await getChainTipByHeight(height);
+    if (!existedStartBlockHeight) return null as unknown as Header;
+    const chainPoint = existedStartBlockHeight.point;
+
+    const blockFetched = await this.apiService.api.getBlockByPoint(chainPoint);
+    let parentHashHeader: string | undefined;
+    if (blockFetched instanceof BlockFetchBlock) {
+      const blockBytes = blockFetched.getBlockBytes();
+      if (blockBytes !== undefined) {
+        // TODO: decode block cbor
+        // const block2 =
+        //   MultiEraBlock.from_explicit_network_cbor_bytes(blockBytes);
+        const block = Block.from_cbor_bytes(blockBytes?.slice(2));
+
+        parentHashHeader = block.header().header_body().prev_hash()?.to_hex();
+      }
+    }
+
+    return {
+      blockHash: Buffer.from(chainPoint.blockHeader?.hash || []).toString(
+        'hex',
+      ),
+      blockHeight: Number(existedStartBlockHeight.blockNo),
+      parentHash: parentHashHeader,
+    };
   }
 }

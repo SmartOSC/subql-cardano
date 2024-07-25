@@ -15,13 +15,18 @@ import { ApiService } from '../api.service';
 import { SpecVersion } from '../dictionary';
 import { IndexerManager } from '../indexer.manager';
 import { WorkerRuntimeService } from '../runtime/workerRuntimeService';
-import { BlockContent, isFullBlock, LightBlockContent } from '../types';
+import {
+  BlockContent,
+  CardanoBlockContent,
+  isFullBlock,
+  LightBlockContent,
+} from '../types';
 
 export type FetchBlockResponse = { specVersion?: number; parentHash: string };
 
 @Injectable()
 export class WorkerService extends BaseWorkerService<
-  BlockContent | LightBlockContent,
+  CardanoBlockContent | LightBlockContent,
   FetchBlockResponse,
   SubstrateDatasource,
   { specVersion: number }
@@ -42,7 +47,7 @@ export class WorkerService extends BaseWorkerService<
   protected async fetchChainBlock(
     height: number,
     { specVersion }: { specVersion: number },
-  ): Promise<IBlock<BlockContent | LightBlockContent>> {
+  ): Promise<IBlock<CardanoBlockContent | LightBlockContent>> {
     const specChanged = await this.workerRuntimeService.specChanged(
       height,
       specVersion,
@@ -56,20 +61,27 @@ export class WorkerService extends BaseWorkerService<
     return block;
   }
 
-  protected toBlockResponse(block: BlockContent): FetchBlockResponse {
+  protected toBlockResponse(block: CardanoBlockContent): FetchBlockResponse {
     return {
-      specVersion: block.block.specVersion,
-      parentHash: block.block.block.header.parentHash.toHex(),
+      specVersion: 0,
+      parentHash:
+        block.block
+          .as_babbage()
+          ?.header()
+          .header_body()
+          .prev_hash()
+          ?.to_hex()
+          .toString() ?? '',
     };
   }
 
   protected async processFetchedBlock(
-    block: IBlock<BlockContent | LightBlockContent>,
+    block: IBlock<CardanoBlockContent | LightBlockContent>,
     dataSources: SubstrateDatasource[],
   ): Promise<ProcessBlockResponse> {
     const runtimeVersion = !isFullBlock(block.block)
       ? undefined
-      : await this.workerRuntimeService.getRuntimeVersion(block.block.block);
+      : await this.workerRuntimeService.getRuntimeVersion(block.block);
 
     return this.indexerManager.indexBlock(block, dataSources, runtimeVersion);
   }

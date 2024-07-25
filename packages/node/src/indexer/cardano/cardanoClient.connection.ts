@@ -10,7 +10,7 @@ import {
   exitWithError,
 } from '@subql/node-core';
 import { getLogger } from '@subql/node-core';
-import { BlockContent } from '../types';
+import { BlockContent, CardanoBlockContent } from '../types';
 import { MiniProtocolClient } from './miniProtocolClient';
 import * as CardanoUtil from '../../utils/cardano';
 import { CardanoClient } from './CardanoClient';
@@ -29,7 +29,7 @@ export class CardanoClientConnection
     IApiConnectionSpecific<
       CardanoClient,
       CardanoSafeClient,
-      IBlock<BlockContent>[]
+      IBlock<CardanoBlockContent>[]
     >
 {
   readonly networkMeta: NetworkMetadataPayload;
@@ -80,7 +80,7 @@ export class CardanoClientConnection
     this.unsafeApi.disconnect();
   }
 
-  async fetchBlocks(heights: number[]): Promise<IBlock<BlockContent>[]> {
+  async fetchBlocks(heights: number[]): Promise<IBlock<CardanoBlockContent>[]> {
     const blocks = await this.fetchBlocksBatches(this.unsafeApi, heights);
     return blocks;
   }

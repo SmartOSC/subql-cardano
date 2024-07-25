@@ -33,10 +33,13 @@ import { IndexerManager } from './indexer.manager';
 import { ProjectService } from './project.service';
 import { RuntimeService } from './runtime/runtimeService';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
+import { RedisCachingModule } from '../caching/redis-caching.module';
 
 @Module({
+  imports: [RedisCachingModule],
   providers: [
     InMemoryCacheService,
+    RedisCachingModule,
     StoreService,
     StoreCacheService,
     ApiService,
