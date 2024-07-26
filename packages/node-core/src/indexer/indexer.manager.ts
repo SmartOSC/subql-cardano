@@ -188,7 +188,6 @@ export abstract class BaseIndexerManager<
       for (const handler of handlers) {
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         vm = vm! ?? (await getVM(ds));
-
         const parsedData = await this.prepareFilteredData(kind, data, ds);
 
         monitorWrite(`- Handler: ${handler.handler}, args:${handledStringify(data)}`);

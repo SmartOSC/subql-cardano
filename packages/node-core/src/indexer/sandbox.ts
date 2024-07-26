@@ -34,6 +34,7 @@ const DEFAULT_OPTION = (unsafe = false): NodeVMOptions => {
       builtin: ['*'],
       external: true,
       context: 'host',
+      // import: ['@dcspark/cardano-multiplatform-multiera-lib-nodejs'],
     },
     wrapper: 'commonjs',
     sourceExtensions: ['js', 'cjs'],

@@ -20,7 +20,7 @@ network:
   endpoint: ["ws://192.168.10.136:3001"]
 dataSources:
   - kind: substrate/Runtime
-    startBlock: 69064
+    startBlock: 68786
     # startTip: 163541
     # startBlockHash: 6e465338ce45a180998c10d06a1bb86ca038e49d06ac3ddd244e3c73af3a3acc
     mapping:
