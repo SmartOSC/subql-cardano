@@ -21,6 +21,7 @@
   ],
   "dependencies": {
     "@apollo/client": "^3.8.8",
+    "@dcspark/cardano-multiplatform-multiera-lib-nodejs": "^5.3.1",
     "@nestjs/common": "^9.4.0",
     "@nestjs/event-emitter": "^2.0.0",
     "@nestjs/schedule": "^3.0.1",

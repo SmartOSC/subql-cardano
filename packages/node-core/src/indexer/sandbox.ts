@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import {existsSync, readFileSync} from 'fs';
-import fs from 'fs';
+import * as fs from 'fs';
 import path from 'path';
 import {SubqlTest} from '@subql/testing';
 import {Cache, Store} from '@subql/types-core';
@@ -27,17 +27,15 @@ export interface SandboxOption {
 const DEFAULT_OPTION = (unsafe = false): NodeVMOptions => {
   return {
     console: 'inherit',
-    // wasm: unsafe,
-    wasm: true,
+    wasm: unsafe,
     sandbox: {atob},
     require: {
       builtin: ['*'],
       external: true,
-      context: 'host',
-      // import: ['@dcspark/cardano-multiplatform-multiera-lib-nodejs'],
+      context: 'sandbox',
     },
     wrapper: 'commonjs',
-    sourceExtensions: ['js', 'cjs'],
+    sourceExtensions: ['js', 'cjs', 'ts'],
   };
 };
 

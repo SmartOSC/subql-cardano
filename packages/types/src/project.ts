@@ -21,7 +21,6 @@ import {
   SecondLayerHandlerProcessor_1_0_0,
   DsProcessor,
 } from '@subql/types-core';
-import {MultiEraBlock as CardanoBlock} from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import {LightSubstrateEvent, SubstrateBlock, SubstrateEvent, SubstrateExtrinsic} from './interfaces';
 
 export type RuntimeDatasourceTemplate = BaseTemplateDataSource<SubstrateDatasource>;
@@ -69,7 +68,7 @@ export enum SubstrateHandlerKind {
 
 export type RuntimeHandlerInputMap<T extends AnyTuple = AnyTuple> = {
   [SubstrateHandlerKind.Block]: SubstrateBlock;
-  [SubstrateHandlerKind.CardanoBlock]: CardanoBlock;
+  [SubstrateHandlerKind.CardanoBlock]: string;
   [SubstrateHandlerKind.Event]: SubstrateEvent<T> | LightSubstrateEvent<T>;
   [SubstrateHandlerKind.Call]: SubstrateExtrinsic<T>;
 };

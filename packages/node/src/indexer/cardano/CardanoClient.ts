@@ -53,7 +53,7 @@ export class CardanoClient {
         }
       }
 
-      //await this.disconnect();
+      this.disconnect();
       return {
         blockHash: Buffer.from(chainTip.point.blockHeader?.hash || []).toString(
           'hex',
@@ -81,7 +81,7 @@ export class CardanoClient {
         fromChainPoint,
         toChainPoint,
       );
-      //await this.disconnect();
+      this.disconnect();
       return result;
     } catch (error) {
       console.log('[CardanoClient][getBlocksByRangePoint] ERR: ', error);
@@ -95,7 +95,7 @@ export class CardanoClient {
     try {
       const blockFetchClient = await this.miniClient.connectBlockFetchClient();
       const block = await blockFetchClient.request(chainPoint);
-      //await this.disconnect();
+      this.disconnect();
       return block;
     } catch (error) {
       console.log('[CardanoClient][getBlockByPoint] ERR: ', error);
@@ -109,7 +109,7 @@ export class CardanoClient {
       const intersect = await chainSyncClient.findIntersect([point]);
       const rollBackwards = await chainSyncClient.requestNext();
       const rollForwards = await chainSyncClient.requestNext();
-      //await this.disconnect();
+      this.disconnect();
       if (rollForwards instanceof ChainSyncRollForward) {
         const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
           const nextData = next.data as CborArray;
@@ -149,7 +149,7 @@ export class CardanoClient {
   ): Promise<ChainSyncIntersectFound | ChainSyncIntersectNotFound> {
     const chainSyncClient = await this.miniClient.connectChainSyncClient();
     const currentData = await chainSyncClient.findIntersect([point]);
-    //await this.disconnect();
+    this.disconnect();
     return currentData;
   }
 

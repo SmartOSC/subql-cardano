@@ -57,7 +57,7 @@ export class CardanoClientConnection
 
     connection.setMiniClient(miniClient);
 
-    logger.info(`connected to ${endpoint}`);
+    logger.info(`[ApiService][CreateConnection] connected to ${endpoint}`);
 
     return connection;
   }

@@ -71,9 +71,9 @@ export class MiniProtocolClient {
         throw err;
       });
 
-      setTimeout(() => {
-        socket.destroy();
-      }, 10000);
+      // setTimeout(() => {
+      //   socket.destroy();
+      // }, 10000);
     } catch (err) {
       console.error('[MiniProtocolConnectionERR]', err);
     }
@@ -163,17 +163,13 @@ export class MiniProtocolClient {
 
       // create client harmoniclabs
       const client: BlockFetchClient = new BlockFetchClient(mplexer);
-      if (this.blockFetchClient) {
-        this.blockFetchClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
-        this.blockFetchClient.mplexer.close({ closeSocket: true });
-      }
       this.blockFetchClient = client;
       client.on('error', (err) => {
         throw err;
       });
-      setTimeout(() => {
-        socket.destroy();
-      }, 10000);
+      // setTimeout(() => {
+      //   socket.destroy();
+      // }, 15000);
       return client;
     } catch (error) {
       console.error(
@@ -187,7 +183,7 @@ export class MiniProtocolClient {
 
   async connectChainSyncClient(): Promise<ChainSyncClient> {
     try {
-      await redis.incr('number_of_socket');
+      // await redis.incr('number_of_socket');
       const socket = connect({
         host: '192.168.10.136',
         port: 3001,
@@ -216,7 +212,7 @@ export class MiniProtocolClient {
           closeSocket: true,
         });
       });
-      socket.on('error', () => {
+      socket.on('error', (err) => {
         socket.destroy();
         mplexer.close({
           closeSocket: true,
@@ -225,17 +221,13 @@ export class MiniProtocolClient {
 
       // create client harmoniclabs
       const client: ChainSyncClient = new ChainSyncClient(mplexer);
-      if (this.chainSyncClient) {
-        this.chainSyncClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
-        this.chainSyncClient.mplexer.close({ closeSocket: true });
-      }
       this.chainSyncClient = client;
       client.on('error', (err) => {
         throw err;
       });
-      setTimeout(() => {
-        socket.destroy();
-      }, 10000);
+      // setTimeout(() => {
+      //   socket.destroy();
+      // }, 15000);
       return client;
     } catch (error) {
       console.error(
@@ -248,14 +240,11 @@ export class MiniProtocolClient {
   }
 
   async disconnect(): Promise<void> {
-    await redis.decr('number_of_socket');
-
-    this.blockFetchClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
-    this.chainSyncClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
-
-    this.chainSyncClient.mplexer.close({ closeSocket: true });
-    this.blockFetchClient.mplexer.close({ closeSocket: true });
-
-    this.socket.destroy();
+    // await redis.decr('number_of_socket');
+    // this.blockFetchClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
+    // this.chainSyncClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
+    // this.chainSyncClient.mplexer.close({ closeSocket: true });
+    // this.blockFetchClient.mplexer.close({ closeSocket: true });
+    // this.socket.destroy();
   }
 }
