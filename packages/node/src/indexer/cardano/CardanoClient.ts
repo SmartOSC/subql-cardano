@@ -1,65 +1,70 @@
 import { Header } from '@subql/node-core';
 import { MiniProtocolClient } from './miniProtocolClient';
-import { toHex } from '../utils/hex';
+import { fromHex, toHex } from '../utils/hex';
 import {
   BlockFetchBlock,
   BlockFetchClient,
   BlockFetchNoBlocks,
   ChainSyncClient,
+  ChainSyncIntersectFound,
+  ChainSyncIntersectNotFound,
+  ChainSyncRollBackwards,
+  ChainSyncRollForward,
   IChainPoint,
+  IChainTip,
   Multiplexer,
 } from '@harmoniclabs/ouroboros-miniprotocols-ts';
 import { Block } from '@dcspark/cardano-multiplatform-lib-nodejs';
-import { MultiEraBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
-import { Socket, connect } from 'net';
+import {
+  Cbor,
+  CborArray,
+  CborBytes,
+  CborTag,
+  CborUInt,
+} from '@harmoniclabs/cbor';
+import { createHash32 } from '../utils/utils';
 
 export class CardanoClient {
-  public rpc: any;
-  constructor(private miniClient: MiniProtocolClient) {
-    this.rpc = {
-      getHeader() {
-        // TODO: implement
-        return null;
-      },
-      getFinalizedHead() {
-        // TODO: implement
-        return null;
-      },
-    };
-  }
+  constructor(private miniClient: MiniProtocolClient) {}
 
   /**
    *
    * @returns Header
    */
   async getHeader(): Promise<Header> {
-    // Get latest tip -> point
-    const chainSyncClient = await this.miniClient.connectChainSyncClient();
-    const { tip: chainTip } = await chainSyncClient.requestNext();
+    try {
+      // Get latest tip -> point
+      const chainSyncClient = await this.miniClient.connectChainSyncClient();
+      const { tip: chainTip } = await chainSyncClient.requestNext();
 
-    // Get latest block header
-    const blockFetch = await this.miniClient.connectBlockFetchClient();
-    let parentHashHeader: string | undefined;
-    const blockFetched = await blockFetch.request(chainTip.point);
-    if (blockFetched instanceof BlockFetchBlock) {
-      const blockBytes = blockFetched.getBlockBytes();
-      if (blockBytes !== undefined) {
-        // TODO: decode block cbor
-        // const block2 =
-        //   MultiEraBlock.from_explicit_network_cbor_bytes(blockBytes);
-        const block = Block.from_cbor_bytes(blockBytes?.slice(2));
+      // Get latest block header
+      const blockFetch = await this.miniClient.connectBlockFetchClient();
+      let parentHashHeader: string | undefined;
+      const blockFetched = await blockFetch.request(chainTip.point);
+      if (blockFetched instanceof BlockFetchBlock) {
+        const blockBytes = blockFetched.getBlockBytes();
+        if (blockBytes !== undefined) {
+          // TODO: decode block cbor
+          // const block2 =
+          //   MultiEraBlock.from_explicit_network_cbor_bytes(blockBytes);
+          const block = Block.from_cbor_bytes(blockBytes?.slice(2));
 
-        parentHashHeader = block.header().header_body().prev_hash()?.to_hex();
+          parentHashHeader = block.header().header_body().prev_hash()?.to_hex();
+        }
       }
-    }
 
-    return {
-      blockHash: Buffer.from(chainTip.point.blockHeader?.hash || []).toString(
-        'hex',
-      ),
-      blockHeight: Number(chainTip.blockNo),
-      parentHash: parentHashHeader,
-    };
+      //await this.disconnect();
+      return {
+        blockHash: Buffer.from(chainTip.point.blockHeader?.hash || []).toString(
+          'hex',
+        ),
+        blockHeight: Number(chainTip.blockNo),
+        parentHash: parentHashHeader,
+      };
+    } catch (error) {
+      console.log('[CardanoClient][GetHeader] ERR: ', error);
+    }
+    return this.getHeader();
   }
   getFinalizedHead(): Promise<Header> {
     return this.getHeader();
@@ -69,31 +74,88 @@ export class CardanoClient {
     fromChainPoint: IChainPoint,
     toChainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock[]> {
-    // Get latest tip -> point
-    const blockFetchClient = await this.miniClient.connectBlockFetchClient();
-    const result = await blockFetchClient.requestRange(
-      fromChainPoint,
-      toChainPoint,
-    );
-
-    blockFetchClient.removeAllListeners();
-    blockFetchClient.mplexer.close();
-    this.disconnect();
-    return result;
+    try {
+      // Get latest tip -> point
+      const blockFetchClient = await this.miniClient.connectBlockFetchClient();
+      const result = await blockFetchClient.requestRange(
+        fromChainPoint,
+        toChainPoint,
+      );
+      //await this.disconnect();
+      return result;
+    } catch (error) {
+      console.log('[CardanoClient][getBlocksByRangePoint] ERR: ', error);
+    }
+    return this.getBlocksByRangePoint(fromChainPoint, toChainPoint);
   }
 
   async getBlockByPoint(
     chainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock> {
-    const blockFetchClient = await this.miniClient.connectBlockFetchClient();
-    const block = await blockFetchClient.request(chainPoint);
-    this.disconnect();
-    return block;
+    try {
+      const blockFetchClient = await this.miniClient.connectBlockFetchClient();
+      const block = await blockFetchClient.request(chainPoint);
+      //await this.disconnect();
+      return block;
+    } catch (error) {
+      console.log('[CardanoClient][getBlockByPoint] ERR: ', error);
+    }
+    return this.getBlockByPoint(chainPoint);
   }
 
-  disconnect(): void {
+  async requestNextFromStartPoint(point: IChainPoint): Promise<IChainTip> {
+    try {
+      const chainSyncClient = await this.miniClient.connectChainSyncClient();
+      const intersect = await chainSyncClient.findIntersect([point]);
+      const rollBackwards = await chainSyncClient.requestNext();
+      const rollForwards = await chainSyncClient.requestNext();
+      //await this.disconnect();
+      if (rollForwards instanceof ChainSyncRollForward) {
+        const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
+          const nextData = next.data as CborArray;
+          const nextHeader = nextData.array[1] as CborTag;
+          let nextHeaderBytes = (nextHeader.data as CborBytes).bytes;
+          const blockHeaderCbor = Cbor.parse(nextHeaderBytes) as CborArray;
+          const blockHeaderBody = blockHeaderCbor.array[0];
+          const blockHash = createHash32(nextHeaderBytes);
+
+          const blockHeaderBodyArray = (blockHeaderBody as CborArray).array;
+          const [blockNoCbor, blockSlotCbor] = blockHeaderBodyArray;
+
+          return {
+            point: {
+              blockHeader: {
+                hash: fromHex(blockHash),
+                slotNumber: (blockSlotCbor as CborUInt).num,
+              },
+            },
+            blockNo: (blockNoCbor as CborUInt).num,
+          };
+        };
+
+        return extractChainPoint(rollForwards);
+      }
+
+      throw new Error('[requestNextFromStartPoint] not found point');
+    } catch (error) {
+      console.log(point);
+
+      console.error('[NextFromStartPoint] ', error);
+    }
+    return this.requestNextFromStartPoint(point);
+  }
+  async findIntersect(
+    point: IChainPoint,
+  ): Promise<ChainSyncIntersectFound | ChainSyncIntersectNotFound> {
+    const chainSyncClient = await this.miniClient.connectChainSyncClient();
+    const currentData = await chainSyncClient.findIntersect([point]);
+    //await this.disconnect();
+    return currentData;
+  }
+
+  async disconnect(): Promise<void> {
     // nothing to be done
-    this.miniClient.disconnect();
+    await this.miniClient.disconnect();
   }
 
   getBlockRegistry() {}

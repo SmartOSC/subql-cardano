@@ -15,6 +15,7 @@ import {
 } from '@harmoniclabs/ouroboros-miniprotocols-ts';
 import { MultiEraBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { Block } from '@dcspark/cardano-multiplatform-lib-nodejs';
+import { toHex } from '../indexer/utils/hex';
 
 export async function fetchBlocksBatches(
   api: CardanoClient,
@@ -54,7 +55,9 @@ export async function fetchBlocksBatches(
 
         // const blockBody = Block.from_cbor_bytes(blockBytes.slice(2));
 
-        return formatBlockUtil(new LazyBlockContent(blockBody));
+        return formatBlockUtil(
+          new LazyBlockContent(blockBody, toHex(blockBytes)),
+        );
       });
   } catch (error) {
     console.error('ERR fetchBlocksBatches', error);
@@ -95,7 +98,7 @@ export function formatBlockUtil<B extends CardanoBlockContent>(
 ): IBlock<B> {
   return {
     block,
-    getHeader: () => cardanoBlockToHeader(block.block),
+    getHeader: () => cardanoBlockToHeader(block.block.multiEraBlock),
   };
 }
 
@@ -146,10 +149,16 @@ export function calcInterval(api: CardanoClient): number {
   return 6000;
 }
 export class LazyBlockContent implements CardanoBlockContent {
-  constructor(private _block: MultiEraBlock) {}
+  constructor(
+    private multiEraBlock: MultiEraBlock,
+    private cborHexBlock: string,
+  ) {}
 
   get block() {
-    return this._block;
+    return {
+      multiEraBlock: this.multiEraBlock,
+      cborHexBlock: this.cborHexBlock,
+    };
   }
 
   get events() {

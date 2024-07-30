@@ -38,9 +38,8 @@ export class UnfinalizedBlocksService extends BaseUnfinalizedBlocksService<
   // TODO: add cache here
   @mainThreadOnly()
   protected async getHeaderForHash(hash: string): Promise<Header> {
-    return substrateHeaderToHeader(
-      await this.apiService.api.rpc.getHeader(hash),
-    );
+    // TODO: implement
+    return null as unknown as Header;
   }
 
   @mainThreadOnly()

@@ -6,6 +6,7 @@ import { CacheConfigFactory } from './caching-config.factory';
 @Module({
   imports: [
     CacheModule.registerAsync<RedisOptions>({
+      isGlobal: true,
       useClass: CacheConfigFactory,
     }),
   ],

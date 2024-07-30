@@ -8,51 +8,41 @@ import { fromHex, toHex } from '../indexer/utils/hex';
 
 // Create a Redis client
 export const redis = new Redis({
-  host: '127.0.0.1',
-  port: 6379,
+  host: process.env.REDIS_HOST ?? '127.0.0.1',
+  port: parseInt(process.env.REDIS_PORT ?? '6379', 10) || 6379,
 });
-
 export interface IBlockHeaderHash {
-  readonly slot: number | bigint;
+  readonly slotNumber: string;
   readonly hash: string;
 }
 
-interface IChainPoint {
+export interface IChainPointSchema {
   blockHeader?: IBlockHeaderHash;
 }
-interface IChainTipSchema {
-  point: IChainPoint;
-  blockNo: number | bigint;
-}
-
-interface IChainSyncRollBackwardsInstance {
-  point: IChainPoint;
-  tip: IChainTipSchema;
+export interface IChainTipSchema {
+  point: IChainPointSchema;
+  blockNo: string;
 }
 
 export async function getChainTipByHeight(
   height: number,
 ): Promise<IChainTip | null> {
   try {
-    const tipChain = await redis.get(`block-${height}`);
-    if (!tipChain) return null;
+    const point = await redis.get(`smart:cache:block-${height}`);
+    if (!point) return null;
 
-    const chainSyncRollBackwards = JSON.parse(
-      JSON.parse(tipChain),
-    ) as unknown as IChainSyncRollBackwardsInstance;
+    const chainPoint = JSON.parse(
+      JSON.parse(point),
+    ) as unknown as IChainTipSchema;
 
     return {
       point: {
         blockHeader: {
-          hash: fromHex(
-            chainSyncRollBackwards.tip.point.blockHeader?.hash ?? '',
-          ),
-          slotNumber: Number(
-            chainSyncRollBackwards.tip.point.blockHeader?.slot ?? 0,
-          ),
+          hash: fromHex(chainPoint.point.blockHeader?.hash ?? ''),
+          slotNumber: Number(chainPoint.point.blockHeader?.slotNumber ?? 0),
         },
       },
-      blockNo: chainSyncRollBackwards.tip.blockNo,
+      blockNo: BigInt(chainPoint.blockNo),
     };
   } catch (error) {
     console.error('ERR getChainTipByHeight: ', error);

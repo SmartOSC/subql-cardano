@@ -34,6 +34,7 @@ import { ProjectService } from './project.service';
 import { RuntimeService } from './runtime/runtimeService';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
 import { RedisCachingModule } from '../caching/redis-caching.module';
+import { CustomSandboxService } from './customSandbox.service';
 
 @Module({
   imports: [RedisCachingModule],
@@ -115,7 +116,7 @@ import { RedisCachingModule } from '../caching/redis-caching.module';
     IndexingBenchmarkService,
     PoiBenchmarkService,
     SubstrateDictionaryService,
-    SandboxService,
+    CustomSandboxService,
     DsProcessorService,
     DynamicDsService,
     PoiService,

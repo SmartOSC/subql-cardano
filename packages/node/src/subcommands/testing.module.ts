@@ -14,7 +14,6 @@ import {
   StoreCacheService,
   StoreService,
   TestRunner,
-  SandboxService,
 } from '@subql/node-core';
 import { ConfigureModule } from '../configure/configure.module';
 import { ApiService } from '../indexer/api.service';
@@ -23,6 +22,7 @@ import { DynamicDsService } from '../indexer/dynamic-ds.service';
 import { IndexerManager } from '../indexer/indexer.manager';
 import { ProjectService } from '../indexer/project.service';
 import { UnfinalizedBlocksService } from '../indexer/unfinalizedBlocks.service';
+import { CustomSandboxService } from '../indexer/customSandbox.service';
 
 @Module({
   providers: [
@@ -32,7 +32,7 @@ import { UnfinalizedBlocksService } from '../indexer/unfinalizedBlocks.service';
     EventEmitter2,
     PoiService,
     PoiSyncService,
-    SandboxService,
+    CustomSandboxService,
     DsProcessorService,
     DynamicDsService,
     UnfinalizedBlocksService,

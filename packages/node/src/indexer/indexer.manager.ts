@@ -47,6 +47,7 @@ import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
 import { CardanoSafeClient } from './cardano/cardanoClient.connection';
 import { CardanoClient } from './cardano/CardanoClient';
 import { MultiEraBlock as CardanoBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
+import { CustomSandboxService } from './customSandbox.service';
 
 @Injectable()
 export class IndexerManager extends BaseIndexerManager<
@@ -66,7 +67,7 @@ export class IndexerManager extends BaseIndexerManager<
   constructor(
     apiService: CardanoApiService,
     nodeConfig: NodeConfig,
-    sandboxService: SandboxService<CardanoClient, CardanoSafeClient>,
+    sandboxService: CustomSandboxService,
     dsProcessorService: DsProcessorService,
     dynamicDsService: DynamicDsService,
     unfinalizedBlocksService: UnfinalizedBlocksService,
@@ -113,8 +114,11 @@ export class IndexerManager extends BaseIndexerManager<
     getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
   ): Promise<void> {
     if (isFullBlock(blockContent)) {
-      const { block, events } = blockContent;
-      await this.indexBlockContent(block, dataSources, getVM);
+      const {
+        block: { cborHexBlock },
+        events,
+      } = blockContent;
+      await this.indexBlockContent(cborHexBlock, dataSources, getVM);
 
       // Run initialization events
       // const initEvents = events.filter((evt) => evt.phase.isInitialization);
@@ -148,7 +152,7 @@ export class IndexerManager extends BaseIndexerManager<
   }
 
   private async indexBlockContent(
-    block: CardanoBlock,
+    block: string,
     dataSources: SubstrateProjectDs[],
     getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
   ): Promise<void> {

@@ -28,7 +28,7 @@ export function getIdFromTokenName(tokenName: string, baseToken: AuthToken, pref
 }
 
 export function hashSha3_256(data: string): string {
-  const hash = sha3_256(Buffer.from(data, 'hex')).toString();
+  const hash = sha3_256(Buffer.from(data).toString('hex')).toString();
   return hash;
 }
 
@@ -37,7 +37,7 @@ export function convertString2Hex(str: string) {
   return Buffer.from(str).toString('hex');
 }
 
-export const createHash32 = (buffer: Buffer) => {
+export const createHash32 = (buffer: Uint8Array) => {
   const hash = blake2b(buffer, undefined, 32);
   return Buffer.from(hash).toString('hex');
 };

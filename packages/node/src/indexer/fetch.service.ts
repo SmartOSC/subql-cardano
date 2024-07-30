@@ -3,7 +3,7 @@
 
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { SchedulerRegistry } from '@nestjs/schedule';
+import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { ApiPromise } from '@polkadot/api';
 
 import { isCustomDs, SubstrateHandlerKind } from '@subql/common-substrate';
@@ -38,6 +38,13 @@ import { CardanoClient } from './cardano/CardanoClient';
 import assert from 'assert';
 import { range, without } from 'lodash';
 import { RedisCachingService } from '../caching/redis-caching.service';
+import { sleep } from './utils/utils';
+import {
+  IChainPoint,
+  IChainTip,
+} from '@harmoniclabs/ouroboros-miniprotocols-ts';
+import { fromHex, toHex } from './utils/hex';
+import { IChainPointSchema, IChainTipSchema, redis } from '../utils/cache';
 
 const BLOCK_TIME_VARIANCE = 5000; //ms
 const INTERVAL_PERCENT = 0.9;
@@ -100,6 +107,9 @@ export class FetchService
       //ignore if interval not exist
     }
     this._isShutdown = true;
+
+    redis.del(`number_of_cron_job_process`);
+    redis.del(`number_of_socket`);
   }
 
   get api(): CardanoClient {
@@ -153,7 +163,7 @@ export class FetchService
   }
 
   async getBestBlockHead(): Promise<void> {
-    super.getBestBlockHead();
+    await super.getBestBlockHead();
     // customize
     try {
       const currentBestHeight = await this.getBestHeight();
@@ -221,13 +231,15 @@ export class FetchService
       }
 
       const latestHeight = this._latestHeight();
-      if (
-        !this._validSequentialBlock(
-          startBlockHeight,
-          startBlockHeight + scaledBatchSize - 1,
-        )
-      ) {
-        logger.debug(`Queue not found point height`);
+      const validBlockRange = await this._validSequentialBlock(
+        startBlockHeight,
+        startBlockHeight + scaledBatchSize - 1,
+      );
+      if (!validBlockRange) {
+        logger.error(
+          `Queue not found chain point with range ${startBlockHeight} - ${startBlockHeight + scaledBatchSize - 1}`,
+        );
+        await sleep(1000);
         continue;
       }
       if (
@@ -235,12 +247,12 @@ export class FetchService
         startBlockHeight > latestHeight
       ) {
         if (this.blockDispatcher.freeSize < scaledBatchSize) {
-          logger.debug(
+          logger.error(
             `Fetch service is waiting for free space in the block dispatcher queue, free size: ${this.blockDispatcher.freeSize}, scaledBatchSize: ${scaledBatchSize}`,
           );
         }
         if (startBlockHeight > latestHeight) {
-          logger.debug(
+          logger.error(
             `Fetch service is waiting for new blocks, startBlockHeight: ${startBlockHeight}, latestHeight: ${latestHeight}`,
           );
         }
@@ -322,12 +334,12 @@ export class FetchService
     endBlockHeight: number,
   ): Promise<boolean> {
     const existedStartBlockHeight = await this.redisCaching.get(
-      `block-${startBlockHeight}`,
+      `smart:cache:block-${startBlockHeight}`,
     );
     if (!existedStartBlockHeight) return false;
 
     const existedEndBlockHeight = await this.redisCaching.get(
-      `block-${endBlockHeight}`,
+      `smart:cache:block-${endBlockHeight}`,
     );
     if (!existedEndBlockHeight) return false;
 
@@ -411,7 +423,7 @@ export class FetchService
   }
 
   async getFinalizedBlockHead(): Promise<void> {
-    super.getFinalizedBlockHead();
+    await super.getFinalizedBlockHead();
     // customize
     const currentFinalizedHeader = await this.getFinalizedHeader();
     if (
@@ -437,5 +449,159 @@ export class FetchService
         this._bypassBlocks.push(...range(currentHeight, nextHeight));
       }
     }
+  }
+
+  // async runCacheChainTipCardano(): Promise<void> {
+  //   const logger = getLogger('WorkerSyncCardano');
+  //   logger.info('Run CronJob Cache Point Cardano ...');
+
+  //   // TODO: load tip from datasource
+  //   let startPoint: IChainPoint = {
+  //     blockHeader: {
+  //       hash: fromHex(
+  //         '2407c6f8bb36749cd84cb3648a4bbc90a59f5f127467b29ced6efb6d04f099a6',
+  //       ),
+  //       slotNumber: BigInt(99874),
+  //     },
+  //   };
+
+  //   let next: IChainTip = {
+  //     blockNo: 0,
+  //     point: { blockHeader: { hash: new Uint8Array(), slotNumber: 0 } },
+  //   };
+  //   try {
+  //     while (true) {
+  //       logger.info('Run CronJob Cache Point Cardano ...');
+  //       if (next && next.blockNo) {
+  //         const cached = await this.redisCaching.get(
+  //           `smart:cache:block-${(BigInt(next.blockNo) + 1n).toString()}`,
+  //         );
+  //         if (cached) {
+  //           const chainPointCached = JSON.parse(
+  //             cached,
+  //           ) as unknown as IChainTipSchema;
+  //           next = {
+  //             point: {
+  //               blockHeader: {
+  //                 hash: fromHex(chainPointCached.point.blockHeader?.hash ?? ''),
+  //                 slotNumber: BigInt(
+  //                   chainPointCached.point.blockHeader?.slotNumber ?? 0,
+  //                 ),
+  //               },
+  //             },
+  //             blockNo: BigInt(chainPointCached.blockNo),
+  //           };
+  //           startPoint = {
+  //             blockHeader: {
+  //               hash: next.point.blockHeader?.hash ?? new Uint8Array(),
+  //               slotNumber: BigInt(next.point.blockHeader?.slotNumber ?? 0),
+  //             },
+  //           };
+  //           continue;
+  //         }
+  //       }
+
+  //       next = await this.apiService.api.requestNextFromStartPoint(startPoint);
+  //       logger.info(
+  //         `Run Cached Chain tip for Cardano height = ${next.blockNo.toString()}`,
+  //       );
+  //       const key = `smart:cache:block-${next.blockNo.toString()}`;
+  //       const value = JSON.stringify({
+  //         point: {
+  //           blockHeader: {
+  //             hash: toHex(next.point.blockHeader?.hash ?? new Uint8Array()),
+  //             slotNumber: next.point.blockHeader?.slotNumber.toString(),
+  //           },
+  //         },
+  //         blockNo: next.blockNo.toString(),
+  //       });
+  //       await this.redisCaching.set<string>(key, value, {
+  //         ttl: 24 * 60 * 60, // 1 day
+  //       });
+
+  //       // sleep 1s
+  //       await sleep(1000);
+  //       startPoint = next.point;
+  //     }
+  //   } catch (error) {
+  //     logger.error(`Fail sync chain tip from cardano: ${error}`);
+  //   }
+
+  //   this.runCacheChainTipCardano();
+  // }
+
+  // @Cron(CronExpression.EVERY_SECOND)
+  async cronJobCacheChainTipCardano(): Promise<void> {
+    const logger = getLogger('WorkerSyncCardano');
+    logger.info('Run CronJob Cache Point Cardano ...');
+
+    const numOfProcess = await redis.incr('number_of_cron_job_process');
+    if (numOfProcess > 1) return;
+    try {
+      // TODO: load tip from datasource
+      const startPointInCached = await this.redisCaching.get('startPoint');
+      let chainTipStart: IChainTipSchema = {
+        point: {
+          blockHeader: {
+            hash: '2407c6f8bb36749cd84cb3648a4bbc90a59f5f127467b29ced6efb6d04f099a6',
+            slotNumber: '99874',
+          },
+        },
+        blockNo: '24771',
+      };
+      if (!startPointInCached) {
+        await this.redisCaching.set(
+          'startPoint',
+          JSON.stringify(chainTipStart),
+        );
+      }
+      if (startPointInCached) {
+        chainTipStart = JSON.parse(startPointInCached) as IChainTipSchema;
+      }
+
+      while (true) {
+        const cached = await this.redisCaching.get(
+          `smart:cache:block-${(BigInt(chainTipStart.blockNo) + 1n).toString()}`,
+        );
+        if (!cached) break;
+
+        chainTipStart = JSON.parse(cached) as unknown as IChainTipSchema;
+        await this.redisCaching.set('startPoint', cached);
+      }
+
+      const startPoint: IChainPoint = {
+        blockHeader: {
+          hash: fromHex(chainTipStart.point.blockHeader?.hash ?? ''),
+          slotNumber: BigInt(chainTipStart.point.blockHeader?.slotNumber ?? 0),
+        },
+      };
+      const next =
+        await this.apiService.api.requestNextFromStartPoint(startPoint);
+
+      chainTipStart = {
+        point: {
+          blockHeader: {
+            hash: toHex(next.point.blockHeader?.hash ?? new Uint8Array()),
+            slotNumber: next.point.blockHeader?.slotNumber.toString() ?? '',
+          },
+        },
+        blockNo: next.blockNo.toString(),
+      };
+
+      const key = `smart:cache:block-${next.blockNo.toString()}`;
+      const value = JSON.stringify(chainTipStart);
+
+      await this.redisCaching.set<string>(key, value, {
+        ttl: 24 * 60 * 60, // 1 day
+      });
+      await this.redisCaching.set('startPoint', value);
+
+      logger.info(
+        `Run Cached Chain tip for Cardano height = ${next.blockNo.toString()}`,
+      );
+    } catch (error) {
+      console.error('[cronJobCacheChainTipCardano] ERR', error);
+    }
+    await redis.del('number_of_cron_job_process');
   }
 }

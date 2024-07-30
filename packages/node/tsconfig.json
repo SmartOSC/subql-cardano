@@ -16,6 +16,6 @@
     { "path": "../utils" },
     { "path": "../testing" }
   ],
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/worker-sync/*"],
   "exclude": ["node_modules", "test", "dist"]
 }

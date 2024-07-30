@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0
 
-import { MultiEraBlock as CardanoBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
+import { MultiEraBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { ApiPromise } from '@polkadot/api';
 import { ApiDecoration } from '@polkadot/api/types';
 import type { HexString } from '@polkadot/util/types';
@@ -34,7 +34,10 @@ export interface CardanoEvent {
 }
 
 export interface CardanoBlockContent {
-  block: CardanoBlock;
+  block: {
+    multiEraBlock: MultiEraBlock;
+    cborHexBlock: string;
+  };
   events: SubstrateEvent[];
 }
 

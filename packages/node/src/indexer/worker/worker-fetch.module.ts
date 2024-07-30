@@ -27,6 +27,7 @@ import { WorkerRuntimeService } from '../runtime/workerRuntimeService';
 import { UnfinalizedBlocksService } from '../unfinalizedBlocks.service';
 import { WorkerService } from './worker.service';
 import { CardanoClientConnection } from '../cardano/cardanoClient.connection';
+import { CustomSandboxService } from '../customSandbox.service';
 
 /**
  * The alternative version of FetchModule for worker
@@ -65,7 +66,7 @@ import { CardanoClientConnection } from '../cardano/cardanoClient.connection';
         NodeConfig,
       ],
     },
-    SandboxService,
+    CustomSandboxService,
     DsProcessorService,
     {
       provide: DynamicDsService,

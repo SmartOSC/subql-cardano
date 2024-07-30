@@ -33,17 +33,7 @@ import { SubstrateNodeConfig } from '../configure/NodeConfig';
 import { SubqueryProject } from '../configure/SubqueryProject';
 import { isOnlyEventHandlers } from '../utils/project';
 import * as CardanoUtil from '../utils/cardano';
-// import {
-//   ApiPromiseConnection,
-//   FetchFunc,
-//   GetFetchFunc,
-// } from './apiPromise.connection';
-import {
-  ApiAt,
-  BlockContent,
-  CardanoBlockContent,
-  LightBlockContent,
-} from './types';
+import { CardanoBlockContent } from './types';
 import {
   CardanoClientConnection,
   CardanoSafeClient,
@@ -192,29 +182,8 @@ export class ApiService
       logger.info('Using provided chain types');
     }
 
-    await this.createConnections(
-      network,
-      //createConnection
-      (endpoint) =>
-        CardanoClientConnection.create(endpoint, this.fetchBlocksBatches()),
-      //postConnectedHook
-      // (connection: ApiPromiseConnection, endpoint: string, index: number) => {
-      //   const api = connection.unsafeApi;
-      //   api.on('connected', () => {
-      //     this.eventEmitter.emit(IndexerEvent.ApiConnected, {
-      //       value: 1,
-      //       apiIndex: index,
-      //       endpoint: endpoint,
-      //     });
-      //   });
-      //   api.on('disconnected', () => {
-      //     this.eventEmitter.emit(IndexerEvent.ApiConnected, {
-      //       value: 0,
-      //       apiIndex: index,
-      //       endpoint: endpoint,
-      //     });
-      //   });
-      // },
+    await this.createConnections(network, (endpoint) =>
+      CardanoClientConnection.create(endpoint, this.fetchBlocksBatches()),
     );
 
     return this;

@@ -9,8 +9,8 @@ import * as redisStore from 'cache-manager-redis-store';
 export class CacheConfigFactory implements CacheOptionsFactory {
   createCacheOptions(): CacheModuleOptions {
     return {
-      host: 'localhost',
-      port: '6379',
+      host: process.env.REDIS_HOST ?? 'localhost',
+      port: parseInt(process.env.REDIS_PORT ?? '6379', 10) || 6379,
       store: redisStore,
       ttl: 24 * 60 * 60,
     };

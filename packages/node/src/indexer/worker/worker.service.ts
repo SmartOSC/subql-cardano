@@ -65,7 +65,7 @@ export class WorkerService extends BaseWorkerService<
     return {
       specVersion: 0,
       parentHash:
-        block.block
+        block.block.multiEraBlock
           .as_babbage()
           ?.header()
           .header_body()

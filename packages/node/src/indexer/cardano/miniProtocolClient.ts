@@ -11,6 +11,7 @@ import {
   N2NMessageAcceptVersion,
   N2NMessageProposeVersion,
 } from '@harmoniclabs/ouroboros-miniprotocols-ts';
+import { redis } from '../../utils/cache';
 
 export class MiniProtocolClient {
   public blockFetchClient!: BlockFetchClient;
@@ -22,52 +23,61 @@ export class MiniProtocolClient {
   }
 
   async initialize() {
-    // connection harmoniclabs
-    const socket = connect({
-      host: '192.168.10.136',
-      port: 3001,
-      keepAlive: false,
-      keepAliveInitialDelay: 0,
-      timeout: 10000,
-      autoSelectFamily: true,
-      autoSelectFamilyAttemptTimeout: 5000,
-    });
-    this.socket = socket;
-    const mplexer: Multiplexer = new Multiplexer({
-      protocolType: 'node-to-node',
-      connect: () => {
-        if (socket.destroyed) {
-          socket.destroy();
-          mplexer.close({
-            closeSocket: true,
-          });
-        }
-        return socket;
-      },
-    });
-    await this.performHandshake(mplexer, 42);
-    socket.on('close', () => {
-      mplexer.close({
-        closeSocket: true,
+    try {
+      // connection harmoniclabs
+      const socket = connect({
+        host: '192.168.10.136',
+        port: 3001,
+        keepAlive: false,
+        keepAliveInitialDelay: 0,
+        timeout: 10000,
+        autoSelectFamily: true,
+        autoSelectFamilyAttemptTimeout: 5000,
       });
-    });
-    socket.on('error', () => {
-      socket.destroy();
-      mplexer.close({
-        closeSocket: true,
+      this.socket = socket;
+      const mplexer: Multiplexer = new Multiplexer({
+        protocolType: 'node-to-node',
+        connect: () => {
+          if (socket.destroyed) {
+            socket.destroy();
+            mplexer.close({
+              closeSocket: true,
+            });
+          }
+          return socket;
+        },
       });
-    });
+      await this.performHandshake(mplexer, 42);
+      socket.on('close', () => {
+        mplexer.close({
+          closeSocket: true,
+        });
+      });
+      socket.on('error', () => {
+        socket.destroy();
+        mplexer.close({
+          closeSocket: true,
+        });
+      });
 
-    // create client harmoniclabs
-    const client: BlockFetchClient = new BlockFetchClient(mplexer);
-    const chainSyncClient: ChainSyncClient = new ChainSyncClient(mplexer);
+      // create client harmoniclabs
+      const client: BlockFetchClient = new BlockFetchClient(mplexer);
+      const chainSyncClient: ChainSyncClient = new ChainSyncClient(mplexer);
 
-    this.chainSyncClient = chainSyncClient;
-    this.blockFetchClient = client;
+      this.chainSyncClient = chainSyncClient;
+      this.blockFetchClient = client;
 
-    client.on('error', (err) => {
-      throw err;
-    });
+      client.on('error', (err) => {
+        throw err;
+      });
+
+      setTimeout(() => {
+        socket.destroy();
+      }, 10000);
+    } catch (err) {
+      console.error('[MiniProtocolConnectionERR]', err);
+    }
+    this.initialize();
   }
 
   async performHandshake(mplexer: Multiplexer, networkMagic: number) {
@@ -113,104 +123,139 @@ export class MiniProtocolClient {
   }
 
   async connectBlockFetchClient(): Promise<BlockFetchClient> {
-    // connection harmoniclabs
-    const socket = connect({
-      host: '192.168.10.136',
-      port: 3001,
-      keepAlive: false,
-      keepAliveInitialDelay: 0,
-      timeout: 10000,
-      autoSelectFamily: true,
-      autoSelectFamilyAttemptTimeout: 5000,
-    });
-    this.socket = socket;
-    const mplexer: Multiplexer = new Multiplexer({
-      protocolType: 'node-to-node',
-      connect: () => {
-        if (socket.destroyed) {
-          socket.destroy();
-          mplexer.close({
-            closeSocket: true,
-          });
-        }
-        return socket;
-      },
-    });
-    await this.performHandshake(mplexer, 42);
-    socket.on('close', () => {
-      mplexer.close({
-        closeSocket: true,
+    try {
+      await redis.incr('number_of_socket');
+      // connection harmoniclabs
+      const socket = connect({
+        host: '192.168.10.136',
+        port: 3001,
+        keepAlive: false,
+        keepAliveInitialDelay: 0,
+        timeout: 10000,
+        autoSelectFamily: true,
+        autoSelectFamilyAttemptTimeout: 5000,
       });
-    });
-    socket.on('error', () => {
-      socket.destroy();
-      mplexer.close({
-        closeSocket: true,
+      this.socket = socket;
+      const mplexer: Multiplexer = new Multiplexer({
+        protocolType: 'node-to-node',
+        connect: () => {
+          if (socket.destroyed) {
+            socket.destroy();
+            mplexer.close({
+              closeSocket: true,
+            });
+          }
+          return socket;
+        },
       });
-    });
+      await this.performHandshake(mplexer, 42);
+      socket.on('close', () => {
+        mplexer.close({
+          closeSocket: true,
+        });
+      });
+      socket.on('error', () => {
+        socket.destroy();
+        mplexer.close({
+          closeSocket: true,
+        });
+      });
 
-    // create client harmoniclabs
-    const client: BlockFetchClient = new BlockFetchClient(mplexer);
-    this.blockFetchClient = client;
-    client.on('error', (err) => {
-      throw err;
-    });
-    return client;
+      // create client harmoniclabs
+      const client: BlockFetchClient = new BlockFetchClient(mplexer);
+      if (this.blockFetchClient) {
+        this.blockFetchClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
+        this.blockFetchClient.mplexer.close({ closeSocket: true });
+      }
+      this.blockFetchClient = client;
+      client.on('error', (err) => {
+        throw err;
+      });
+      setTimeout(() => {
+        socket.destroy();
+      }, 10000);
+      return client;
+    } catch (error) {
+      console.error(
+        '[MiniProtocolClient][connectBlockFetchClient] ERR: ',
+        error,
+      );
+    }
+
+    return this.connectBlockFetchClient();
   }
 
   async connectChainSyncClient(): Promise<ChainSyncClient> {
-    // connection harmoniclabs
-    const socket = connect({
-      host: '192.168.10.136',
-      port: 3001,
-      keepAlive: false,
-      keepAliveInitialDelay: 0,
-      timeout: 10000,
-      autoSelectFamily: true,
-      autoSelectFamilyAttemptTimeout: 5000,
-    });
-    this.socket = socket;
-    const mplexer: Multiplexer = new Multiplexer({
-      protocolType: 'node-to-node',
-      connect: () => {
-        if (socket.destroyed) {
-          socket.destroy();
-          mplexer.close({
-            closeSocket: true,
-          });
-        }
-        return socket;
-      },
-    });
-    await this.performHandshake(mplexer, 42);
-    socket.on('close', () => {
-      mplexer.close({
-        closeSocket: true,
+    try {
+      await redis.incr('number_of_socket');
+      const socket = connect({
+        host: '192.168.10.136',
+        port: 3001,
+        keepAlive: false,
+        keepAliveInitialDelay: 0,
+        timeout: 10000,
+        autoSelectFamily: true,
+        autoSelectFamilyAttemptTimeout: 5000,
       });
-    });
-    socket.on('error', () => {
-      socket.destroy();
-      mplexer.close({
-        closeSocket: true,
+      this.socket = socket;
+      const mplexer: Multiplexer = new Multiplexer({
+        protocolType: 'node-to-node',
+        connect: () => {
+          if (socket.destroyed) {
+            socket.destroy();
+            mplexer.close({
+              closeSocket: true,
+            });
+          }
+          return socket;
+        },
       });
-    });
+      await this.performHandshake(mplexer, 42);
+      socket.on('close', () => {
+        mplexer.close({
+          closeSocket: true,
+        });
+      });
+      socket.on('error', () => {
+        socket.destroy();
+        mplexer.close({
+          closeSocket: true,
+        });
+      });
 
-    // create client harmoniclabs
-    const client: ChainSyncClient = new ChainSyncClient(mplexer);
-    this.chainSyncClient = client;
-    client.on('error', (err) => {
-      throw err;
-    });
-    return client;
+      // create client harmoniclabs
+      const client: ChainSyncClient = new ChainSyncClient(mplexer);
+      if (this.chainSyncClient) {
+        this.chainSyncClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
+        this.chainSyncClient.mplexer.close({ closeSocket: true });
+      }
+      this.chainSyncClient = client;
+      client.on('error', (err) => {
+        throw err;
+      });
+      setTimeout(() => {
+        socket.destroy();
+      }, 10000);
+      return client;
+    } catch (error) {
+      console.error(
+        '[MiniProtocolClient][connectChainSyncClient] ERR: ',
+        error,
+      );
+    }
+
+    return this.connectChainSyncClient();
   }
 
-  disconnect(): void {
-    // nothing to be done
+  async disconnect(): Promise<void> {
+    await redis.decr('number_of_socket');
+
     this.blockFetchClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
+    this.chainSyncClient.removeAllListeners(); // This is not in the original code, but it is necessary to avoid memory leaks
+
+    this.chainSyncClient.mplexer.close({ closeSocket: true });
     this.blockFetchClient.mplexer.close({ closeSocket: true });
 
-    this.chainSyncClient.removeAllListeners();
-    this.chainSyncClient.mplexer.close({ closeSocket: true });
     this.socket.destroy();
   }
 }
