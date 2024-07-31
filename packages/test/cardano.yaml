@@ -23,8 +23,8 @@ network:
 dataSources:
   - kind: substrate/Runtime
     startBlock: 24772
-    # startTip: 163541
-    # startBlockHash: 6e465338ce45a180998c10d06a1bb86ca038e49d06ac3ddd244e3c73af3a3acc
+    startSlot: 99874
+    startBlockHash: 2407c6f8bb36749cd84cb3648a4bbc90a59f5f127467b29ced6efb6d04f099a6
     mapping:
       file: ./dist/index.js
       handlers:

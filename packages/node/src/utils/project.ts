@@ -15,13 +15,15 @@ import {
   isCustomDs,
 } from '@subql/common-substrate';
 import { SANDBOX_DEFAULT_BUILTINS, saveFile } from '@subql/node-core';
-import { Reader } from '@subql/types-core';
+import { BaseDataSource, Reader } from '@subql/types-core';
 import yaml from 'js-yaml';
 import { NodeVM, VMScript } from 'vm2';
 import {
   SubqueryProject,
   SubstrateProjectDs,
 } from '../configure/SubqueryProject';
+import { IChainTipSchema } from './cache';
+import { SubstrateCustomDatasource } from '@subql/types';
 
 export function isBaseHandler(
   handler: SubstrateHandler,
@@ -139,4 +141,24 @@ export function isOnlyEventHandlers(project: SubqueryProject): boolean {
   );
 
   return !hasNonEventHandler && !hasNonEventTemplate;
+}
+
+export function getStartChainPoint(
+  dataSources: SubstrateCustomDatasource[],
+): IChainTipSchema {
+  if (dataSources.length === 0) {
+    throw new Error(
+      `Failed to find a valid datasource, Please check your endpoint if specName filter is used.`,
+    );
+  } else {
+    return {
+      point: {
+        blockHeader: {
+          hash: dataSources[0].startBlockHash ?? '',
+          slotNumber: dataSources[0].startSlot?.toString() ?? '',
+        },
+      },
+      blockNo: dataSources[0].startBlock?.toString() ?? '',
+    };
+  }
 }

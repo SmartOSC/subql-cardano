@@ -157,6 +157,24 @@ export class CardanoClient {
     }
     throw new Error('Request Next From Start Point failed: not found point');
   }
+
+  async requestNext(): Promise<IChainTip> {
+    const { chainSyncClient, socket: chainSyncSocket } =
+      await this.miniClient.connectChainSyncClient();
+    const { tip: chainTip } = await chainSyncClient.requestNext();
+    this.disconnect(chainSyncClient, chainSyncSocket);
+
+    return {
+      point: {
+        blockHeader: {
+          hash: chainTip.point.blockHeader?.hash ?? new Uint8Array(),
+          slotNumber: chainTip.point.blockHeader?.slotNumber ?? 0,
+        },
+      },
+      blockNo: chainTip.blockNo,
+    };
+  }
+
   async findIntersect(
     point: IChainPoint,
   ): Promise<ChainSyncIntersectFound | ChainSyncIntersectNotFound> {

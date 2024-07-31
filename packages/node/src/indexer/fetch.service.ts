@@ -450,13 +450,15 @@ export class FetchService
     }
   }
 
-  runWorkerFetchChainPoint() {
+  runWorkerFetchChainPoint(startPoint?: IChainTipSchema) {
     setTimeout(() => {
-      Promise.all([this.cronJobCacheChainTipCardano()]);
+      Promise.all([this.cronJobCacheChainTipCardano(startPoint)]);
     }, 1000);
   }
 
-  async cronJobCacheChainTipCardano(): Promise<void> {
+  async cronJobCacheChainTipCardano(
+    startPointFromDs?: IChainTipSchema,
+  ): Promise<void> {
     wokerLogger.info('Fetch Chain Point From Cardano Starting...');
 
     try {
@@ -465,11 +467,11 @@ export class FetchService
       let chainTipStart: IChainTipSchema = {
         point: {
           blockHeader: {
-            hash: '2407c6f8bb36749cd84cb3648a4bbc90a59f5f127467b29ced6efb6d04f099a6',
-            slotNumber: '99874',
+            hash: startPointFromDs?.point.blockHeader?.hash ?? '',
+            slotNumber: startPointFromDs?.point.blockHeader?.slotNumber ?? '',
           },
         },
-        blockNo: '24771',
+        blockNo: startPointFromDs?.blockNo ?? '',
       };
       if (!startPointInCached) {
         await this.redisCaching.set(
@@ -499,8 +501,9 @@ export class FetchService
           slotNumber: BigInt(chainTipStart.point.blockHeader?.slotNumber ?? 0),
         },
       };
-      const next =
-        await this.apiService.api.requestNextFromStartPoint(startPoint);
+      const next = chainTipStart.blockNo
+        ? await this.apiService.api.requestNextFromStartPoint(startPoint)
+        : await this.apiService.api.requestNext();
 
       chainTipStart = {
         point: {

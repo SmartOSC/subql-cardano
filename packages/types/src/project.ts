@@ -280,6 +280,8 @@ export interface SubstrateCustomDatasource<
   M extends SubstrateMapping = SubstrateMapping<SubstrateCustomHandler>,
   O = any,
 > extends BaseCustomDataSource<SubstrateHandler, M> {
+  startSlot?: number;
+  startBlockHash?: string;
   /**
    * The kind of the custom datasource. This should follow the pattern `substrate/*`.
    * @type {K}

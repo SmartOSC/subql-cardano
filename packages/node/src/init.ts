@@ -55,7 +55,8 @@ export async function bootstrap(): Promise<void> {
      * 1. Handler fetch block data
      */
 
-    fetchService.runWorkerFetchChainPoint();
+    const startPoint = projectService.getStartChainPointFromDataSources();
+    fetchService.runWorkerFetchChainPoint(startPoint);
     await fetchService.init(projectService.startHeight);
 
     app.enableShutdownHooks();
