@@ -1,0 +1,33 @@
+specVersion: 1.0.0
+name: cosmoshub-ibc
+version: 0.0.1
+runner:
+  node:
+    name: '@subql/node'
+    version: '*'
+    options:
+      unsafe: true
+  query:
+    name: '@subql/query'
+    version: '*'
+repository: 'https://github.com/subquery/juno-subql-starter'
+schema:
+  file: ./schema.graphql
+network:
+  chainId: 'sidechain'
+  # This endpoint must be a public non-pruned archive node
+  # We recommend providing more than one endpoint for improved reliability, performance, and uptime
+  # Public nodes may be rate limited, which can affect indexing speed
+  # When developing your project we suggest getting a private API key
+  endpoint: ['ws://192.168.10.136:3001']
+dataSources:
+  - kind: substrate/Runtime
+    startBlock: 24772
+    startSlot: 99874
+    startBlockHash: 2407c6f8bb36749cd84cb3648a4bbc90a59f5f127467b29ced6efb6d04f099a6
+    mapping:
+      file: ./dist/index.js
+      handlers:
+        # Handler Block
+        - handler: handleCardanoBlock
+          kind: cardano/BlockHandler
