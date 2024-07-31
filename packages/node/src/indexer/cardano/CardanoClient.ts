@@ -1,4 +1,4 @@
-import { Header } from '@subql/node-core';
+import { Header, getLogger } from '@subql/node-core';
 import { MiniProtocolClient } from './miniProtocolClient';
 import { fromHex, toHex } from '../utils/hex';
 import {
@@ -23,7 +23,9 @@ import {
   CborUInt,
 } from '@harmoniclabs/cbor';
 import { createHash32 } from '../utils/utils';
+import { Socket } from 'net';
 
+const logger = getLogger('CardanoClient');
 export class CardanoClient {
   constructor(private miniClient: MiniProtocolClient) {}
 
@@ -32,15 +34,21 @@ export class CardanoClient {
    * @returns Header
    */
   async getHeader(): Promise<Header> {
+    logger.info('Get Header Starting ...');
     try {
       // Get latest tip -> point
-      const chainSyncClient = await this.miniClient.connectChainSyncClient();
+      const { chainSyncClient, socket: chainSyncSocket } =
+        await this.miniClient.connectChainSyncClient();
       const { tip: chainTip } = await chainSyncClient.requestNext();
+      this.disconnect(chainSyncClient, chainSyncSocket);
 
       // Get latest block header
-      const blockFetch = await this.miniClient.connectBlockFetchClient();
+      const { blockFetchClient, socket: blockFetchSocket } =
+        await this.miniClient.connectBlockFetchClient();
       let parentHashHeader: string | undefined;
-      const blockFetched = await blockFetch.request(chainTip.point);
+      const blockFetched = await blockFetchClient.request(chainTip.point);
+      this.disconnect(blockFetchClient, blockFetchSocket);
+
       if (blockFetched instanceof BlockFetchBlock) {
         const blockBytes = blockFetched.getBlockBytes();
         if (blockBytes !== undefined) {
@@ -52,8 +60,7 @@ export class CardanoClient {
           parentHashHeader = block.header().header_body().prev_hash()?.to_hex();
         }
       }
-
-      this.disconnect();
+      logger.info('Get Header Successful');
       return {
         blockHash: Buffer.from(chainTip.point.blockHeader?.hash || []).toString(
           'hex',
@@ -62,8 +69,9 @@ export class CardanoClient {
         parentHash: parentHashHeader,
       };
     } catch (error) {
-      console.log('[CardanoClient][GetHeader] ERR: ', error);
+      logger.info('Get Header ERR: ', error);
     }
+    logger.info('Get Header Retry');
     return this.getHeader();
   }
   getFinalizedHead(): Promise<Header> {
@@ -74,42 +82,51 @@ export class CardanoClient {
     fromChainPoint: IChainPoint,
     toChainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock[]> {
+    logger.info('Get Blocks By Range Starting ...');
     try {
       // Get latest tip -> point
-      const blockFetchClient = await this.miniClient.connectBlockFetchClient();
+      const { blockFetchClient, socket } =
+        await this.miniClient.connectBlockFetchClient();
       const result = await blockFetchClient.requestRange(
         fromChainPoint,
         toChainPoint,
       );
-      this.disconnect();
+      this.disconnect(blockFetchClient, socket);
       return result;
     } catch (error) {
-      console.log('[CardanoClient][getBlocksByRangePoint] ERR: ', error);
+      logger.error('Get Blocks By Range ERR: ', error);
     }
+    logger.info('Get Blocks By Range Retry');
     return this.getBlocksByRangePoint(fromChainPoint, toChainPoint);
   }
 
   async getBlockByPoint(
     chainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock> {
+    logger.info('Get Blocks By Point Starting ...');
     try {
-      const blockFetchClient = await this.miniClient.connectBlockFetchClient();
+      const { blockFetchClient, socket } =
+        await this.miniClient.connectBlockFetchClient();
       const block = await blockFetchClient.request(chainPoint);
-      this.disconnect();
+      this.disconnect(blockFetchClient, socket);
       return block;
     } catch (error) {
-      console.log('[CardanoClient][getBlockByPoint] ERR: ', error);
+      logger.error('Get Blocks By Point ERR: ', error);
     }
+    logger.info('Get Blocks By Point Starting ...');
     return this.getBlockByPoint(chainPoint);
   }
 
   async requestNextFromStartPoint(point: IChainPoint): Promise<IChainTip> {
+    logger.info('Request Next From Start Point Starting ...');
     try {
-      const chainSyncClient = await this.miniClient.connectChainSyncClient();
+      const { chainSyncClient, socket } =
+        await this.miniClient.connectChainSyncClient();
       const intersect = await chainSyncClient.findIntersect([point]);
       const rollBackwards = await chainSyncClient.requestNext();
       const rollForwards = await chainSyncClient.requestNext();
-      this.disconnect();
+      this.disconnect(chainSyncClient, socket);
+
       if (rollForwards instanceof ChainSyncRollForward) {
         const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
           const nextData = next.data as CborArray;
@@ -135,28 +152,35 @@ export class CardanoClient {
 
         return extractChainPoint(rollForwards);
       }
-
-      throw new Error('[requestNextFromStartPoint] not found point');
     } catch (error) {
-      console.log(point);
-
-      console.error('[NextFromStartPoint] ', error);
+      logger.error('Request Next From Start Point ERR: ', error);
     }
-    return this.requestNextFromStartPoint(point);
+    throw new Error('Request Next From Start Point failed: not found point');
   }
   async findIntersect(
     point: IChainPoint,
   ): Promise<ChainSyncIntersectFound | ChainSyncIntersectNotFound> {
-    const chainSyncClient = await this.miniClient.connectChainSyncClient();
+    const { chainSyncClient, socket } =
+      await this.miniClient.connectChainSyncClient();
     const currentData = await chainSyncClient.findIntersect([point]);
-    this.disconnect();
+    this.disconnect(chainSyncClient, socket);
     return currentData;
   }
 
-  async disconnect(): Promise<void> {
+  disconnect(client: BlockFetchClient | ChainSyncClient, socket: Socket): void {
     // nothing to be done
-    await this.miniClient.disconnect();
+    this.miniClient.disconnect(client, socket);
   }
 
   getBlockRegistry() {}
+  apiDisconnect() {
+    // this.miniClient.disconnect(
+    //   this.miniClient.blockFetchClient,
+    //   this.miniClient.socket,
+    // );
+    // this.miniClient.disconnect(
+    //   this.miniClient.chainSyncClient,
+    //   this.miniClient.socket,
+    // );
+  }
 }

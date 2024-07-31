@@ -77,7 +77,7 @@ export class CardanoClientConnection
 
   // eslint-disable-next-line @typescript-eslint/require-await
   async apiDisconnect(): Promise<void> {
-    this.unsafeApi.disconnect();
+    this.unsafeApi.apiDisconnect();
   }
 
   async fetchBlocks(heights: number[]): Promise<IBlock<CardanoBlockContent>[]> {

@@ -38,7 +38,6 @@ import { CardanoClient } from './cardano/CardanoClient';
 import assert from 'assert';
 import { range, without } from 'lodash';
 import { RedisCachingService } from '../caching/redis-caching.service';
-import { sleep } from './utils/utils';
 import {
   IChainPoint,
   IChainTip,
@@ -49,7 +48,7 @@ import { IChainPointSchema, IChainTipSchema, redis } from '../utils/cache';
 const BLOCK_TIME_VARIANCE = 5000; //ms
 const INTERVAL_PERCENT = 0.9;
 const logger = getLogger('CardanoFetchService');
-
+const wokerLogger = getLogger('WorkerSyncCardano');
 @Injectable()
 export class FetchService
   extends BaseFetchService<
@@ -236,10 +235,10 @@ export class FetchService
         startBlockHeight + scaledBatchSize - 1,
       );
       if (!validBlockRange) {
-        logger.error(
+        logger.warn(
           `Queue not found chain point with range ${startBlockHeight} - ${startBlockHeight + scaledBatchSize - 1}`,
         );
-        await sleep(1000);
+        await delay(10);
         continue;
       }
       if (
@@ -451,92 +450,15 @@ export class FetchService
     }
   }
 
-  // async runCacheChainTipCardano(): Promise<void> {
-  //   const logger = getLogger('WorkerSyncCardano');
-  //   logger.info('Run CronJob Cache Point Cardano ...');
+  runWorkerFetchChainPoint() {
+    setTimeout(() => {
+      Promise.all([this.cronJobCacheChainTipCardano()]);
+    }, 1000);
+  }
 
-  //   // TODO: load tip from datasource
-  //   let startPoint: IChainPoint = {
-  //     blockHeader: {
-  //       hash: fromHex(
-  //         '2407c6f8bb36749cd84cb3648a4bbc90a59f5f127467b29ced6efb6d04f099a6',
-  //       ),
-  //       slotNumber: BigInt(99874),
-  //     },
-  //   };
-
-  //   let next: IChainTip = {
-  //     blockNo: 0,
-  //     point: { blockHeader: { hash: new Uint8Array(), slotNumber: 0 } },
-  //   };
-  //   try {
-  //     while (true) {
-  //       logger.info('Run CronJob Cache Point Cardano ...');
-  //       if (next && next.blockNo) {
-  //         const cached = await this.redisCaching.get(
-  //           `smart:cache:block-${(BigInt(next.blockNo) + 1n).toString()}`,
-  //         );
-  //         if (cached) {
-  //           const chainPointCached = JSON.parse(
-  //             cached,
-  //           ) as unknown as IChainTipSchema;
-  //           next = {
-  //             point: {
-  //               blockHeader: {
-  //                 hash: fromHex(chainPointCached.point.blockHeader?.hash ?? ''),
-  //                 slotNumber: BigInt(
-  //                   chainPointCached.point.blockHeader?.slotNumber ?? 0,
-  //                 ),
-  //               },
-  //             },
-  //             blockNo: BigInt(chainPointCached.blockNo),
-  //           };
-  //           startPoint = {
-  //             blockHeader: {
-  //               hash: next.point.blockHeader?.hash ?? new Uint8Array(),
-  //               slotNumber: BigInt(next.point.blockHeader?.slotNumber ?? 0),
-  //             },
-  //           };
-  //           continue;
-  //         }
-  //       }
-
-  //       next = await this.apiService.api.requestNextFromStartPoint(startPoint);
-  //       logger.info(
-  //         `Run Cached Chain tip for Cardano height = ${next.blockNo.toString()}`,
-  //       );
-  //       const key = `smart:cache:block-${next.blockNo.toString()}`;
-  //       const value = JSON.stringify({
-  //         point: {
-  //           blockHeader: {
-  //             hash: toHex(next.point.blockHeader?.hash ?? new Uint8Array()),
-  //             slotNumber: next.point.blockHeader?.slotNumber.toString(),
-  //           },
-  //         },
-  //         blockNo: next.blockNo.toString(),
-  //       });
-  //       await this.redisCaching.set<string>(key, value, {
-  //         ttl: 24 * 60 * 60, // 1 day
-  //       });
-
-  //       // sleep 1s
-  //       await sleep(1000);
-  //       startPoint = next.point;
-  //     }
-  //   } catch (error) {
-  //     logger.error(`Fail sync chain tip from cardano: ${error}`);
-  //   }
-
-  //   this.runCacheChainTipCardano();
-  // }
-
-  // @Cron(CronExpression.EVERY_SECOND)
   async cronJobCacheChainTipCardano(): Promise<void> {
-    const logger = getLogger('WorkerSyncCardano');
-    logger.info('Run CronJob Cache Point Cardano ...');
+    wokerLogger.info('Fetch Chain Point From Cardano Starting...');
 
-    const numOfProcess = await redis.incr('number_of_cron_job_process');
-    if (numOfProcess > 1) return;
     try {
       // TODO: load tip from datasource
       const startPointInCached = await this.redisCaching.get('startPoint');
@@ -560,6 +482,7 @@ export class FetchService
       }
 
       while (true) {
+        wokerLogger.info('Check caching ...');
         const cached = await this.redisCaching.get(
           `smart:cache:block-${(BigInt(chainTipStart.blockNo) + 1n).toString()}`,
         );
@@ -569,6 +492,7 @@ export class FetchService
         await this.redisCaching.set('startPoint', cached);
       }
 
+      wokerLogger.info('Fetch Next Point');
       const startPoint: IChainPoint = {
         blockHeader: {
           hash: fromHex(chainTipStart.point.blockHeader?.hash ?? ''),
@@ -596,12 +520,13 @@ export class FetchService
       });
       await this.redisCaching.set('startPoint', value);
 
-      logger.info(
-        `Run Cached Chain tip for Cardano height = ${next.blockNo.toString()}`,
+      wokerLogger.info(
+        `Fetch Chain Point From Cardano Height = ${next.blockNo.toString()} Successful!`,
       );
     } catch (error) {
-      console.error('[cronJobCacheChainTipCardano] ERR', error);
+      wokerLogger.error(`Fetch Chain Point From Cardano ERR: ${error}`);
     }
-    await redis.del('number_of_cron_job_process');
+
+    this.runWorkerFetchChainPoint();
   }
 }
