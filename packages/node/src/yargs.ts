@@ -25,7 +25,7 @@ export const yargsOptions = yargsBuilder({
   runOptions: {
     subquery: {
       demandOption: true,
-      default: '../test',
+      default: '../cardano-ibc',
     },
   },
 });

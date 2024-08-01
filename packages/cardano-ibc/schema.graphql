@@ -37,11 +37,9 @@ type CardanoTransfer @entity {
   denomination: String
 }
 
-type EventAttribute @entity {
-  id: ID!
-  key: String
+type EventAttribute @jsonField(indexed: false) {
+  key: String!
   value: String
-  event: Event
 }
 
 type Event @entity {
@@ -49,7 +47,7 @@ type Event @entity {
   blockHeight: BigInt!
   txHash: String!
   type: EventType!
-  eventAttribute: [EventAttribute]! @derivedFrom(field: "event")
+  eventAttributes: [EventAttribute]! # Store a list of JSON objects
 }
 
 type Client @entity {

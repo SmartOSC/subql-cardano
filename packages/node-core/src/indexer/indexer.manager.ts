@@ -191,7 +191,6 @@ export abstract class BaseIndexerManager<
         const parsedData = await this.prepareFilteredData(kind, data, ds);
 
         monitorWrite(`- Handler: ${handler.handler}, args:${handledStringify(data)}`);
-        console.log(`- Handler: ${handler.handler}, args:${handledStringify(data)}`);
         this.nodeConfig.profiler
           ? await profilerWrap(
               vm.securedExec.bind(vm),

@@ -27,10 +27,14 @@ import {
   PlutusData,
 } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { option } from 'yargs';
-import { extractTxOutput, hasTokenPrefix } from './utils/utxo';
+import {
+  extractTxOutput,
+  getIdFromTokenAssets,
+  hasTokenPrefix,
+} from './utils/utxo';
 import { ClientDatum } from '../ibc-types/client/ics_007_tendermint_client/client_datum/ClientDatum';
 import { Data } from '../ibc-types/plutus/data';
-import { decodeCborHex } from './utils/ibc';
+import { decodeCborHex, encodeCborObj } from './utils/ibc';
 import { generateTokenName } from './utils/utils';
 
 export class TokenAsset {
@@ -144,7 +148,9 @@ export class CustomSandboxService extends SandboxService<
     processor.setGlobal('extractTxOutput', extractTxOutput);
     processor.setGlobal('hasTokenPrefix', hasTokenPrefix);
     processor.setGlobal('decodeCborHex', decodeCborHex);
+    processor.setGlobal('encodeCborObj', encodeCborObj);
     processor.setGlobal('generateTokenName', generateTokenName);
+    processor.setGlobal('getIdFromTokenAssets', getIdFromTokenAssets);
     return processor;
   }
 

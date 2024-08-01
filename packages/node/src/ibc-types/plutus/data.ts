@@ -6,8 +6,15 @@ import {
   TProperties,
   TSchema,
   Type,
+  TEnum,
 } from '@sinclair/typebox';
-import { PlutusData } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
+import {
+  BigInteger,
+  ConstrPlutusData,
+  PlutusData,
+  PlutusDataList,
+  PlutusMap,
+} from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { fromHex } from '../../indexer/utils/hex';
 
 export class Constr<T> {
@@ -238,7 +245,7 @@ export const Data = {
   //  * Convert PlutusData to Cbor encoded data.\
   //  * Or apply a shape and convert the provided data struct to Cbor encoded data.
   //  */
-  // to,
+  to,
   // /** Convert Cbor encoded data to PlutusData */
   from,
   /**
@@ -254,8 +261,204 @@ export const Data = {
     return 'd87980';
   },
   castFrom,
-  // castTo,
+  castTo,
 };
+
+/**
+ * Convert PlutusData to Cbor encoded data.\
+ * Or apply a shape and convert the provided data struct to Cbor encoded data.
+ */
+function to<T = Data>(data: Exact<T>, type?: T): Datum | Redeemer {
+  function serialize(data: Data): PlutusData {
+    try {
+      if (typeof data === 'bigint') {
+        return PlutusData.new_integer(BigInteger.from_str(data.toString()));
+      } else if (typeof data === 'string') {
+        return PlutusData.new_bytes(fromHex(data));
+      } else if (data instanceof Constr) {
+        const { index, fields } = data;
+        const plutusList = PlutusDataList.new();
+
+        fields.forEach((field) => plutusList.add(serialize(field)));
+
+        return PlutusData.new_constr_plutus_data(
+          ConstrPlutusData.new(BigInt(index.toString()), plutusList),
+        );
+      } else if (data instanceof Array) {
+        const plutusList = PlutusDataList.new();
+
+        data.forEach((arg) => plutusList.add(serialize(arg)));
+
+        return PlutusData.new_list(plutusList);
+      } else if (data instanceof Map) {
+        const plutusMap = PlutusMap.new();
+
+        for (const [key, value] of data.entries()) {
+          plutusMap.set(serialize(key), serialize(value));
+        }
+
+        return PlutusData.new_map(plutusMap);
+      }
+      throw new Error('Unsupported type');
+    } catch (error) {
+      throw new Error('Could not serialize the data: ' + error);
+    }
+  }
+  const d = type ? castTo<T>(data, type) : (data as Data);
+  return toHex(serialize(d).to_cbor_bytes()) as Datum | Redeemer;
+}
+
+function castTo<T>(struct: Exact<T>, type: T): Data {
+  const shape = type as Json;
+  if (!shape) throw new Error('Could not type cast struct.');
+  const shapeType = (shape.anyOf ? 'enum' : '') || shape.dataType;
+
+  switch (shapeType) {
+    case 'integer': {
+      if (typeof struct !== 'bigint') {
+        throw new Error('Could not type cast to integer.');
+      }
+      integerConstraints(struct, shape);
+      return struct as bigint;
+    }
+    case 'bytes': {
+      if (typeof struct !== 'string') {
+        throw new Error('Could not type cast to bytes.');
+      }
+      bytesConstraints(struct, shape);
+      return struct as string;
+    }
+    case 'constructor': {
+      if (isVoid(shape)) {
+        if (struct !== undefined) {
+          throw new Error('Could not type cast to void.');
+        }
+        return new Constr(0, []);
+      } else if (
+        typeof struct !== 'object' ||
+        struct === null ||
+        shape.fields.length !== Object.keys(struct).length
+      ) {
+        throw new Error('Could not type cast to constructor.');
+      }
+      const fields = shape.fields.map((field: Json) =>
+        castTo<T>(
+          (struct as Record<string, Json>)[field.title || 'wrapper'],
+          field,
+        ),
+      );
+      return shape.hasConstr || shape.hasConstr === undefined
+        ? new Constr(shape.index, fields)
+        : fields;
+    }
+    case 'enum': {
+      // When enum has only one entry it's a single constructor/record object
+      if (shape.anyOf.length === 1) {
+        return castTo<T>(struct, shape.anyOf[0]);
+      }
+
+      if (isBoolean(shape)) {
+        if (typeof struct !== 'boolean') {
+          throw new Error('Could not type cast to boolean.');
+        }
+        return new Constr(struct ? 1 : 0, []);
+      } else if (isNullable(shape)) {
+        if (struct === null) return new Constr(1, []);
+        else {
+          const fields = shape.anyOf[0].fields;
+          if (fields.length !== 1) {
+            throw new Error('Could not type cast to nullable object.');
+          }
+          return new Constr(0, [castTo<T>(struct, fields[0])]);
+        }
+      }
+      switch (typeof struct) {
+        case 'string': {
+          if (!/[A-Z]/.test(struct[0])) {
+            throw new Error(
+              'Could not type cast to enum. Enum needs to start with an uppercase letter.',
+            );
+          }
+          const enumIndex = (shape as TEnum).anyOf.findIndex(
+            (s: TLiteral) =>
+              s.dataType === 'constructor' &&
+              s.fields.length === 0 &&
+              s.title === struct,
+          );
+          if (enumIndex === -1) throw new Error('Could not type cast to enum.');
+          return new Constr(enumIndex, []);
+        }
+        case 'object': {
+          if (struct === null) throw new Error('Could not type cast to enum.');
+          const structTitle = Object.keys(struct)[0];
+
+          if (!/[A-Z]/.test(structTitle)) {
+            throw new Error(
+              'Could not type cast to enum. Enum needs to start with an uppercase letter.',
+            );
+          }
+          const enumEntry = shape.anyOf.find(
+            (s: Json) =>
+              s.dataType === 'constructor' && s.title === structTitle,
+          );
+
+          if (!enumEntry) throw new Error('Could not type cast to enum.');
+
+          const args = (struct as Record<string, T[] | Json>)[structTitle];
+
+          return new Constr(
+            enumEntry.index,
+            // check if named args
+            args instanceof Array
+              ? args.map((item, index) =>
+                  castTo<T>(item, enumEntry.fields[index]),
+                )
+              : enumEntry.fields.map((entry: Json) => {
+                  const [_, item]: [string, Json] = Object.entries(args).find(
+                    ([title]) => title === entry.title,
+                  )!;
+                  return castTo<T>(item, entry);
+                }),
+          );
+        }
+      }
+      throw new Error('Could not type cast to enum.');
+    }
+    case 'list': {
+      if (!(struct instanceof Array)) {
+        throw new Error('Could not type cast to array/tuple.');
+      }
+      if (shape.items instanceof Array) {
+        // tuple
+        const fields = struct.map((item, index) =>
+          castTo<T>(item, shape.items[index]),
+        );
+        return shape.hasConstr ? new Constr(0, fields) : fields;
+      } else {
+        // array
+        listConstraints(struct, shape);
+        return struct.map((item) => castTo<T>(item, shape.items));
+      }
+    }
+    case 'map': {
+      if (!(struct instanceof Map)) {
+        throw new Error('Could not type cast to map.');
+      }
+
+      mapConstraints(struct, shape);
+
+      const map = new Map<Data, Data>();
+      for (const [key, value] of struct.entries()) {
+        map.set(castTo<T>(key, shape.keys), castTo<T>(value, shape.values));
+      }
+      return map;
+    }
+    case undefined: {
+      return struct as Data;
+    }
+  }
+  throw new Error('Could not type cast struct.');
+}
 
 /**
  *  Convert Cbor encoded data to Data.\
@@ -593,3 +796,5 @@ export type Redeemer = string; // Plutus Data (same as Datum)
 
 /** Hex */
 export type Datum = string;
+
+export type Exact<T> = T extends infer U ? U : never;
