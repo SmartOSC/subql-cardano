@@ -61,3 +61,16 @@ type Connection @entity {
 type Channel @entity {
   id: ID!
 }
+
+type CardanoIbcAsset @entity {
+  id: ID!
+  accountAddress: String!
+  denom: String!
+  amount: BigInt!
+  isIbcToken: Boolean!
+  voucherTokenName: String!
+  connectionId: String!
+  port: String!
+  channelId: String!
+  chainId: String!
+}

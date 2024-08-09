@@ -6,9 +6,8 @@ import {
   PlutusData,
 } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import * as handler from '../contracts/handler.json';
-import {CHANNEL_TOKEN_PREFIX, CLIENT_PREFIX, CONNECTION_TOKEN_PREFIX} from '../constants';
+import {CHANNEL_TOKEN_PREFIX, CLIENT_PREFIX, CONNECTION_TOKEN_PREFIX, CHANNEL_ID_PREFIX} from '../constants';
 import {ClientDatum} from '../ibc-types/client/ics_007_tendermint_client/client_datum/ClientDatum';
-import {HandlerOperator} from '../ibc-types/core/ics_025_handler_interface/handler_redeemer/HandlerOperator';
 import {SpendClientRedeemer} from '../ibc-types/client/ics_007_tendermint_client/client_redeemer/SpendClientRedeemer';
 import {ConnectionDatum} from '../ibc-types/core/ics_003_connection_semantics/connection_datum/ConnectionDatum';
 import {MintConnectionRedeemer} from '../ibc-types/core/ics_003_connection_semantics/connection_redeemer/MintConnectionRedeemer';
@@ -16,12 +15,14 @@ import {SpendConnectionRedeemer} from '../ibc-types/core/ics_003_connection_sema
 import {ChannelDatum} from '../ibc-types/core/ics_004/channel_datum/ChannelDatum';
 import {MintChannelRedeemer} from '../ibc-types/core/ics_004/channel_redeemer/MintChannelRedeemer';
 import {SpendChannelRedeemer} from '../ibc-types/core/ics_004/channel_redeemer/SpendChannelRedeemer';
-import {Event, EventAttribute, EventType} from '../types';
-import {EventAttributeClient} from '../constants/eventAttributes';
+import {Event, EventAttribute, EventType, CardanoIbcAsset } from '../types';
+import {EventAttributeChannel, EventAttributeClient} from '../constants/eventAttributes';
 import {fromHex} from '@harmoniclabs/uint8array-utils';
 import {ClientMessageSchema} from '../ibc-types/client/ics_007_tendermint_client/msgs/ClientMessage';
 import {Header, HeaderSchema} from '../ibc-types/client/ics_007_tendermint_client/header/Header';
 import {Data} from '../ibc-types/plutus/data';
+import { convertHex2String } from '../utils/hex';
+import { getDenomPrefix } from '../helpers/helper';
 
 export async function handleCardanoBlock(cborHex: string): Promise<void> {
   logger.info(`Handling an incoming block on Cardano starting`);
@@ -211,6 +212,7 @@ async function handleParseChannelEvents(
 
     const channelDatum = decodeCborHex(txOutput.datum, ChannelDatum);
     let eventType: EventType = EventType.ChannelOpenInit;
+    let eventAttributes: EventAttribute[] = [];
     if (channelDatum.state.channel.state == 'Init') {
       const mintChannelRedeemerHex = redeemers.get(2).data().to_cbor_hex();
       const mintChannelRedeemer = decodeCborHex(mintChannelRedeemerHex, MintChannelRedeemer);
@@ -224,10 +226,17 @@ async function handleParseChannelEvents(
       if (spendChannelRedeemer.valueOf().hasOwnProperty('ChanOpenAck')) eventType = EventType.ChannelOpenAck;
       if (spendChannelRedeemer.valueOf().hasOwnProperty('ChanOpenConfirm')) eventType = EventType.ChannelOpenConfirm;
       if (spendChannelRedeemer.valueOf().hasOwnProperty('ChanCloseConfirm')) eventType = EventType.ChannelCloseConfirm;
-      if (spendChannelRedeemer.valueOf().hasOwnProperty('RecvPacket')) eventType = EventType.RecvPacket;
+      if (spendChannelRedeemer.valueOf().hasOwnProperty('RecvPacket')) {
+        eventType = EventType.RecvPacket;
+        eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer)
+        await saveCardanoIBCAssets(eventType,eventAttributes)
+      }
       if (spendChannelRedeemer.valueOf().hasOwnProperty('TimeoutPacket')) eventType = EventType.TimeoutPacket;
       if (spendChannelRedeemer.valueOf().hasOwnProperty('AcknowledgePacket')) eventType = EventType.AcknowledgePacket;
-      if (spendChannelRedeemer.valueOf().hasOwnProperty('SendPacket')) eventType = EventType.SendPacket;
+      if (spendChannelRedeemer.valueOf().hasOwnProperty('SendPacket')) {
+        eventType = EventType.SendPacket ;
+        eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer)
+      }
     }
 
     const event = Event.create({
@@ -235,12 +244,7 @@ async function handleParseChannelEvents(
       blockHeight: blockHeight,
       txHash: txOutput.hash,
       type: eventType,
-      eventAttributes: [
-        {
-          key: 'channel',
-          value: 'test',
-        },
-      ],
+      eventAttributes: eventAttributes,
     });
     await event.save();
   } catch (error) {
@@ -252,9 +256,215 @@ async function handleParseChannelEvents(
 
 // function extractConnectionEventAttributes(): EventAttribute[] {}
 
-// function extractChannelEventAttributes(): EventAttribute[] {}
+function extractChannelEventAttributes(channelDatum: ChannelDatum): EventAttribute[] {
+  return [
+    {
+      key: EventAttributeChannel.AttributeKeyConnectionID,
+      value: connectionId,
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyPortID,
+      value: convertHex2String(chanDatum.port),
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyChannelID,
+      value: `${CHANNEL_ID_PREFIX}-${channelId}`,
+    },
+    {
+      key: EventAttributeChannel.AttributeVersion,
+      value: convertHex2String(chanDatum.state.channel.version),
+    },
+    {
+      key: EventAttributeChannel.AttributeCounterpartyChannelID,
+      value: convertHex2String(chanDatum.state.channel.counterparty.channel_id),
+    },
+    {
+      key: EventAttributeChannel.AttributeCounterpartyPortID,
+      value: convertHex2String(chanDatum.state.channel.counterparty.port_id),
+    },
+  ].map(
+    (attr) =>
+      <EventAttribute>{
+        key: attr.key.toString(),
+        value: attr.value.toString(),
+        index: true,
+      },
+  )
+}
 
-// function extractPacketEventAttributes(): EventAttribute[] {}
+function extractPacketEventAttributes(channelDatum: ChannelDatum, channelRedeemer: SpendChannelRedeemer): EventAttribute[] {
+  logger.info("extractPacketEventAttributes")
+  let packetData: Packet;
+  let acknowledgement = '';
+  if (channelRedeemer.hasOwnProperty('RecvPacket'))
+    packetData = channelRedeemer['RecvPacket']?.packet as unknown as Packet;
+  if (channelRedeemer.hasOwnProperty('SendPacket'))
+    packetData = channelRedeemer['SendPacket']?.packet as unknown as Packet;
+  if (channelRedeemer.hasOwnProperty('AcknowledgePacket')) {
+    packetData = channelRedeemer['AcknowledgePacket']?.packet as unknown as Packet;
+    acknowledgement = channelRedeemer['AcknowledgePacket']?.acknowledgement;
+  }
+  if (channelRedeemer.hasOwnProperty('TimeoutPacket'))
+    packetData = channelRedeemer['TimeoutPacket']?.packet as unknown as Packet;
+  return [
+    {
+      key:  EventAttributeChannel.AttributeKeyData,
+      value: convertHex2String(packetData.data)
+    }, 
+    {
+      key: EventAttributeChannel.AttributeKeyAck,
+      value: acknowledgement,
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyDataHex,
+      value: packetData.data,
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyAckHex,
+      value: acknowledgement,
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyTimeoutHeight,
+      value: `${packetData.timeout_height.revisionNumber}-${packetData.timeout_height.revisionHeight}`,
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyTimeoutTimestamp,
+      value: packetData.timeout_timestamp,
+    },
+    {
+      key: EventAttributeChannel.AttributeKeySequence,
+      value: packetData.sequence,
+    },
+    {
+      key: EventAttributeChannel.AttributeKeySrcPort,
+      value: convertHex2String(packetData.source_port),
+    },
+    {
+      key: EventAttributeChannel.AttributeKeySrcChannel,
+      value: convertHex2String(packetData.source_channel),
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyDstPort,
+      value: convertHex2String(packetData.destination_port)
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyDstChannel,
+      value: convertHex2String(packetData.destination_channel),
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyChannelOrdering,
+      value: channelDatum.state.channel.ordering,
+    },
+    {
+      key: EventAttributeChannel.AttributeKeyConnection,
+      value: convertHex2String(channelDatum.state.channel.connection_hops[0]),
+    },
+  ].map(
+    (attr) => 
+      <EventAttribute> {
+        key: attr.key.toString(),
+        value: attr.value.toString(),
+        index: true,
+      }
+  )
+}
+
+async function saveCardanoIBCAssets(eventType: EventType, eventAttribute: EventAttribute[]) {
+  logger.info("saveCardanoAssets")
+  let map = new Map<string, string>();
+
+  eventAttribute.forEach(item => {
+    map.set(item.key, item.value)
+  })
+  // TODO: check has packet data
+  const packetData = map.get(EventAttributeChannel.AttributeKeyData)
+  const packetDataObject = JSON.parse(packetData)
+  switch(eventType) {
+    case EventType.RecvPacket:
+      const denomRecv = packetDataObject?.denom
+      const voucherTokenRecvPrefix = getDenomPrefix(
+        map.get(EventAttributeChannel.AttributeKeyDstPort),
+        map.get(EventAttributeChannel.AttributeKeyDstChannel)
+      )
+      // check case mint
+      if(!denomRecv.startsWith(voucherTokenRecvPrefix)) {
+        logger.info("case mint")
+        logger.info("voucherTokenRecvPrefix " + voucherTokenRecvPrefix)
+        logger.info("denom " + denomRecv)
+        const prefixDenom = convertString2Hex(voucherTokenRecvPrefix + denomRecv)
+        logger.info("prefixDenom "  + prefixDenom)
+        const voucherTokenName = hashSha3_256(prefixDenom);
+        //const voucherTokenUnit = handler.validators.mintVoucher.scriptHash + voucherTokenName;
+        logger.info("voucherTokenName " + voucherTokenName)
+        // find by voucherTokenName 
+        
+        logger.info("hehe")
+
+        const eventExample = await store.getByField(`Event`,`BlockHeight`,26673)
+        // const eventExample = await Event.getByFields([["BlockHeight","=",26673]])
+        // logger.info("eventExample ", eventExample)
+        const cardanoIbcAsset = await CardanoIbcAsset.getByFields([["VoucherTokenName","=",`${voucherTokenName}`]]);
+        // const cardanoIbcAsset = await store.getByField("CardanoIbcAsset","VoucherTokenName",voucherTokenName)
+        logger.info("cardanoIbcAsset " + cardanoIbcAsset)
+        if(cardanoIbcAsset) {
+          // update record
+          cardanoIbcAsset.amount = cardanoIbcAsset.amount + packetDataObject?.amount;
+          await cardanoIbcAsset.save()
+        } else {
+          // create new record
+          const newAsset = CardanoIbcAsset.create({
+            id: "id",
+            accountAddress: packetDataObject?.receiver,
+            denom: packetDataObject?.denom,
+            amount: packetDataObject?.amount,
+            isIbcToken: true,
+            voucherTokenName: voucherTokenName,
+            connectionId: map.get(EventAttributeChannel.AttributeKeyConnection),
+            port: map.get(EventAttributeChannel.AttributeKeyDstPort),
+            channelId: map.get(EventAttributeChannel.AttributeKeyDstChannel),
+            chainId: "chain-test",
+          })
+          await newAsset.save();
+        }
+        logger.info("end case recv")
+      }
+    case EventType.SendPacket:
+      const denomSend = packetDataObject?.denom
+      const voucherTokenSendPrefix = getDenomPrefix(
+        map.get(EventAttributeChannel.AttributeKeySrcPort),
+        map.get(EventAttributeChannel.AttributeKeySrcChannel)
+      )
+
+      if(denomSend.startsWith(voucherTokenSendPrefix)) {
+        const prefixDenom = convertString2Hex(voucherTokenSendPrefix + denomSend)
+        const voucherTokenName = hashSha3_256(prefixDenom);
+
+        // find by voucherTokenName 
+        const cardanoIbcAsset = await CardanoIbcAsset.getByFields([["voucherTokenName","=",voucherTokenName]]);
+        if(cardanoIbcAsset) {
+          // update record
+          cardanoIbcAsset.amount = cardanoIbcAsset.amount - packetDataObject?.amount;
+          await cardanoIbcAsset.save()
+        } else {
+          // create new record
+          const newAsset = CardanoIbcAsset.create({
+            id: "id",
+            accountAddress: packetDataObject?.receiver,
+            denom: 0 - packetDataObject?.denom,
+            amount: packetDataObject?.amount,
+            isIbcToken: true,
+            voucherTokenName: voucherTokenName,
+            connectionId: map.get(EventAttributeChannel.AttributeKeyConnection),
+            port: map.get(EventAttributeChannel.AttributeKeyDstPort),
+            channelId: map.get(EventAttributeChannel.AttributeKeyDstChannel),
+            chainId: "chain-test",
+          })
+          await newAsset.save();
+        }
+      }
+  }
+}
+
 
 // utxo.ts
 export class TokenAsset {

@@ -22,9 +22,9 @@ network:
   endpoint: ['ws://192.168.10.136:3001']
 dataSources:
   - kind: substrate/Runtime
-    startBlock: 24772
-    startSlot: 99874
-    startBlockHash: 2407c6f8bb36749cd84cb3648a4bbc90a59f5f127467b29ced6efb6d04f099a6
+    startBlock: 26672
+    startSlot: 107400
+    startBlockHash: DAD0A7DED96DB80A79CB3AEA7E180925C0D7909D3A0C233016725E5C639C52D3
     mapping:
       file: ./dist/index.js
       handlers:
