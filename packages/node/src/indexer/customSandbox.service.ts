@@ -36,6 +36,7 @@ import { ClientDatum } from '../ibc-types/client/ics_007_tendermint_client/clien
 import { Data } from '../ibc-types/plutus/data';
 import { decodeCborHex, encodeCborObj } from './utils/ibc';
 import { generateTokenName } from './utils/utils';
+import { hashSha3_256 } from './utils/hex';
 
 export class TokenAsset {
   name: string;
@@ -151,6 +152,7 @@ export class CustomSandboxService extends SandboxService<
     processor.setGlobal('encodeCborObj', encodeCborObj);
     processor.setGlobal('generateTokenName', generateTokenName);
     processor.setGlobal('getIdFromTokenAssets', getIdFromTokenAssets);
+    processor.setGlobal('hashSha3_256', hashSha3_256);
     return processor;
   }
 

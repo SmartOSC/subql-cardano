@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 // APP API PORT
-export const DEFAULT_PORT = 3000;
+export const DEFAULT_PORT = 3001;
 
 //IPFS
 export const IPFS_READ = 'https://unauthipfs.subquery.network';

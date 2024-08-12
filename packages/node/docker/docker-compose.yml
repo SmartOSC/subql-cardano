@@ -19,3 +19,20 @@ services:
     command: redis-server
     volumes:
       - ./data/redis:/data
+  graphql-engine:
+    image: subquerynetwork/subql-query:latest
+    ports:
+      - 3003:3000
+    restart: always
+    environment:
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_DATABASE: postgres
+      DB_HOST: localhost
+      DB_PORT: 5432
+    network_mode: host
+    command:
+      - --name=cardano-ibc
+      - --playground
+      # - --indexer=http://host.docker.internal:3000
+      - --indexer=http://localhost:3001
