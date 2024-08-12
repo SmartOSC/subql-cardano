@@ -22,7 +22,7 @@ import {ClientMessageSchema} from '../ibc-types/client/ics_007_tendermint_client
 import {Header, HeaderSchema} from '../ibc-types/client/ics_007_tendermint_client/header/Header';
 import {Data} from '../ibc-types/plutus/data';
 import { convertHex2String, convertString2Hex, hexToBytes } from '../utils/hex';
-import { getDenomPrefix } from '../helpers/helper';
+import { getDenomPrefix } from '../utils/helper';
 
 export async function handleCardanoBlock(cborHex: string): Promise<void> {
   logger.info(`Handling an incoming block on Cardano starting`);
@@ -217,12 +217,6 @@ async function handleParseChannelEvents(
     if (channelDatum.state.channel.state == 'Init') {
       const mintChannelRedeemerHex = redeemers.get(2).data().to_cbor_hex();
       const mintChannelRedeemer = decodeCborHex(mintChannelRedeemerHex, MintChannelRedeemer);
-      eventAttributes = [
-        {
-          key:  "test",
-          value: "value",
-        }
-      ]
       if (mintChannelRedeemer.valueOf().hasOwnProperty('ChanOpenInit')) {
         eventType = EventType.ChannelOpenInit;
         eventAttributes = extractChannelEventAttributes(channelDatum, currentChannelId)

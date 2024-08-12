@@ -18,7 +18,7 @@ services:
       - '6379:6379'
     command: redis-server
     volumes:
-      - ./data/redis:/data
+      - .data/redis:/data
   graphql-engine:
     image: subquerynetwork/subql-query:latest
     ports:
@@ -34,5 +34,4 @@ services:
     command:
       - --name=cardano-ibc
       - --playground
-      # - --indexer=http://host.docker.internal:3000
-      - --indexer=http://localhost:3001
+      - --indexer=http://localhost:3000
