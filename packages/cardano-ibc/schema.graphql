@@ -27,19 +27,98 @@ enum EventType {
   UpdateClient
 }
 
+enum ChannelStateType {
+  Uninitialized
+  Init
+  TryOpen
+  Open
+  Closed
+}
+
+enum ChannelOrderType {
+  None
+  Unordered
+  Ordered
+}
+
+enum MsgType {
+  SendPacket
+  RecvPacket
+  AcknowledgePacket
+}
+
+type ChannelCounterparty @jsonField(indexed: false) {
+  portId: String!
+  channelId: String! 
+}
+
+type ConnectionCounterparty @jsonField(indexed: false) {
+  clientId: String!
+  connectionId: String!
+  prefix: String!
+}
+
+type ClientUncheckedRational @jsonField(indexed: false) {
+  numerator: BigInt!
+  denominator: BigInt!
+}
+
+type Height @jsonField(indexed: false) {
+  revisionNumber: BigInt!
+  revisionHeight: BigInt!
+}
+
+type LeafOpSchema @jsonField(indexed: false) {
+  hash: BigInt!
+  prehashKey: BigInt!
+  prehashValue: BigInt!
+  length: BigInt!
+  prefix: String!
+}
+
+
+type ProofSpec @jsonField(indexed: false) {
+  leafSpec: LeafOpSchema!
+  innerSpec: InnerSpec!
+  maxDepth: BigInt!
+  minDepth: BigInt!
+  prehashKeyBeforeComparison: Boolean!
+}
+
+type InnerSpec @jsonField(indexed: false) {
+  childOrder: [BigInt]
+  childSize: BigInt!
+  minPrefixLength: BigInt!
+  maxPrefixLength: BigInt!
+  emptyChild: String!
+  hash: BigInt!
+}
+
 type CardanoTransfer @entity {
   id: ID!
-  blockHeight: BigInt
-  txHash: String
-  fromAddress: String!
-  toAddress: String!
-  amount: String
-  denomination: String
+  blockHeight: BigInt!
+  slot:BigInt!
+  sender: String!
+  receiver: String!
+  sequence: String!
+  srcPort: String!
+  srcChannel: String!
+  dstPort: String!
+  dstChannel: String!
+  connectionId: String!
+  msgType: MsgType!
+  amount: String!
+  denom: String!
 }
 
 type EventAttribute @jsonField(indexed: false) {
   key: String!
   value: String
+}
+
+type ConnectionVersion @jsonField(indexed: false) {
+  identifier: String!
+  features: [String]
 }
 
 type Event @entity {
@@ -52,14 +131,34 @@ type Event @entity {
 
 type Client @entity {
   id: ID!
+  chainId: String!
+  trustLevel: ClientUncheckedRational!
+  trustingPeriod: BigInt!
+  unbondingPeriod: BigInt!
+  maxClockDrift: BigInt!
+  frozenHeight: Height!
+  latestHeight: Height!
+  proofSpecs: [ProofSpec]!
+
 }
 
 type Connection @entity {
   id: ID!
+  clientId: String!
+  versions: [ConnectionVersion]!
+  state: String!
+  counterparty: ConnectionCounterparty!
+  delayPeriod: String! 
 }
 
 type Channel @entity {
   id: ID!
+  state: ChannelStateType!
+  ordering: ChannelOrderType!
+  portId: String!
+  counterparty: ChannelCounterparty!
+  connectionHops: String!
+  version: String
 }
 
 type CardanoIbcAsset @entity {

@@ -19,12 +19,12 @@ network:
   # We recommend providing more than one endpoint for improved reliability, performance, and uptime
   # Public nodes may be rate limited, which can affect indexing speed
   # When developing your project we suggest getting a private API key
-  endpoint: ['ws://192.168.10.136:3001']
+  endpoint: ['ws://dev.cf-ibc-testnet-mithril-sidechain.metadata.dev.cf-deployments.org:3001']
 dataSources:
   - kind: substrate/Runtime
-    startBlock: 24772
-    startSlot: 99874
-    startBlockHash: 2407c6f8bb36749cd84cb3648a4bbc90a59f5f127467b29ced6efb6d04f099a6
+    startBlock: 26172
+    startSlot: 104202
+    startBlockHash: 4E122BB86E63FAFCFB4263F0B3F7C184A7DD4CC92A4D92C40396B6564852D950
     mapping:
       file: ./dist/index.js
       handlers:

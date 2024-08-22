@@ -68,7 +68,7 @@ export class MiniProtocolClient {
     try {
       // connection harmoniclabs
       const socket = connect({
-        host: '192.168.10.136',
+        host: 'dev.cf-ibc-testnet-mithril-sidechain.metadata.dev.cf-deployments.org',
         port: 3001,
         keepAlive: false,
         keepAliveInitialDelay: 0,
@@ -122,7 +122,7 @@ export class MiniProtocolClient {
     try {
       // await redis.incr('number_of_socket');
       const socket = connect({
-        host: '192.168.10.136',
+        host: 'dev.cf-ibc-testnet-mithril-sidechain.metadata.dev.cf-deployments.org',
         port: 3001,
         keepAlive: false,
         keepAliveInitialDelay: 0,

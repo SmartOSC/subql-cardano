@@ -34,4 +34,4 @@ services:
     command:
       - --name=cardano-ibc
       - --playground
-      - --indexer=http://localhost:3000
+      - --indexer=http://127.0.0.1:3001
