@@ -1,9 +1,9 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0
 
-import {SubstrateDatasource} from '@subql/types';
+import {CardanoDatasource} from '@subql/types';
 import {plainToClass} from 'class-transformer';
-import {ISubstrateProjectManifest} from '../types';
+import {ICardanoProjectManifest} from '../types';
 import {ProjectManifestV1_0_0Impl} from './v1_0_0';
 export type VersionedProjectManifest = {specVersion: string};
 
@@ -16,11 +16,11 @@ type Versions = keyof typeof SUBSTRATE_SUPPORTED_VERSIONS;
 
 export type ProjectManifestImpls = InstanceType<(typeof SUBSTRATE_SUPPORTED_VERSIONS)[Versions]>;
 
-export function manifestIsV1_0_0(manifest: ISubstrateProjectManifest): manifest is ProjectManifestV1_0_0Impl {
+export function manifestIsV1_0_0(manifest: ICardanoProjectManifest): manifest is ProjectManifestV1_0_0Impl {
   return manifest.specVersion === '1.0.0';
 }
 
-export class SubstrateProjectManifestVersioned implements ISubstrateProjectManifest {
+export class SubstrateProjectManifestVersioned implements ICardanoProjectManifest {
   private _impl: ProjectManifestImpls;
 
   constructor(projectManifest: VersionedProjectManifest) {
@@ -51,7 +51,7 @@ export class SubstrateProjectManifestVersioned implements ISubstrateProjectManif
     return this._impl.validate();
   }
 
-  get dataSources(): SubstrateDatasource[] {
+  get dataSources(): CardanoDatasource[] {
     return this._impl.dataSources;
   }
 

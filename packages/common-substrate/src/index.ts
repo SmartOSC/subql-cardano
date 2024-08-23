@@ -3,7 +3,7 @@
 
 export * from './project';
 
-import {SubstrateCustomDatasource, SubstrateDatasource, SubstrateRuntimeDatasource} from '@subql/types';
+import {CardanoCustomDatasource, CardanoDatasource, CardanoRuntimeDatasource} from '@subql/types';
 import {INetworkCommonModule} from '@subql/types-core';
 import * as p from './project';
 
@@ -11,4 +11,4 @@ import * as p from './project';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _ = {
   ...p,
-} satisfies INetworkCommonModule<SubstrateDatasource, SubstrateRuntimeDatasource, SubstrateCustomDatasource>;
+} satisfies INetworkCommonModule<CardanoDatasource, CardanoRuntimeDatasource, CardanoCustomDatasource>;

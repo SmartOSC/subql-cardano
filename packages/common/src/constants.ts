@@ -19,6 +19,7 @@ export const POI_AWAIT_TIME = 2; // seconds
 
 // NETWORK
 export enum NETWORK_FAMILY {
+  // cardano = 'Cardano',
   substrate = 'Substrate',
   cosmos = 'Cosmos',
   algorand = 'Algorand',

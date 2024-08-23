@@ -7,7 +7,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NETWORK_FAMILY } from '@subql/common';
 import { isCustomDs } from '@subql/common-substrate';
 import { NodeConfig, DictionaryService, getLogger } from '@subql/node-core';
-import { SubstrateBlock, SubstrateDatasource } from '@subql/types';
+import { CardanoBlock, CardanoDatasource } from '@subql/types';
 import { DsProcessor } from '@subql/types-core';
 import { SubqueryProject } from '../../configure/SubqueryProject';
 import { DsProcessorService } from '../ds-processor.service';
@@ -19,8 +19,8 @@ const logger = getLogger('SubstrateDictionary');
 
 @Injectable()
 export class SubstrateDictionaryService extends DictionaryService<
-  SubstrateDatasource,
-  SubstrateBlock
+  CardanoDatasource,
+  CardanoBlock
 > {
   async initDictionaries(): Promise<void> {
     const dictionariesV1: SubstrateDictionaryV1[] = [];

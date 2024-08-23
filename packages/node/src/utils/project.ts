@@ -7,10 +7,10 @@ import { LocalReader, loadFromJsonOrYaml } from '@subql/common';
 import {
   ChainTypes,
   parseChainTypes,
-  SubstrateRuntimeHandler,
-  SubstrateCustomHandler,
-  SubstrateHandler,
-  SubstrateHandlerKind,
+  CardanoRuntimeHandler,
+  CardanoCustomHandler,
+  CardanoHandler,
+  CardanoHandlerKind,
   isRuntimeDs,
   isCustomDs,
 } from '@subql/common-substrate';
@@ -20,20 +20,20 @@ import yaml from 'js-yaml';
 import { NodeVM, VMScript } from 'vm2';
 import {
   SubqueryProject,
-  SubstrateProjectDs,
+  CardanoProjectDs,
 } from '../configure/SubqueryProject';
 import { IChainTipSchema } from './cache';
-import { SubstrateCustomDatasource } from '@subql/types';
+import { CardanoCustomDatasource } from '@subql/types';
 
 export function isBaseHandler(
-  handler: SubstrateHandler,
-): handler is SubstrateRuntimeHandler {
-  return Object.values<string>(SubstrateHandlerKind).includes(handler.kind);
+  handler: CardanoHandler,
+): handler is CardanoRuntimeHandler {
+  return Object.values<string>(CardanoHandlerKind).includes(handler.kind);
 }
 
 export function isCustomHandler(
-  handler: SubstrateHandler,
-): handler is SubstrateCustomHandler {
+  handler: CardanoHandler,
+): handler is CardanoCustomHandler {
   return !isBaseHandler(handler);
 }
 
@@ -120,31 +120,31 @@ export function loadChainTypesFromJs(
   return rawContent;
 }
 
-function dsContainsNonEventHandlers(ds: SubstrateProjectDs): boolean {
-  if (isRuntimeDs(ds)) {
-    return !!ds.mapping.handlers.find(
-      (handler) => handler.kind !== SubstrateHandlerKind.Event,
-    );
-  } else if (isCustomDs(ds)) {
-    // TODO this can be improved upon in the future.
-    return true;
-  }
-  return true;
-}
+// function dsContainsNonEventHandlers(ds: SubstrateProjectDs): boolean {
+//   if (isRuntimeDs(ds)) {
+//     return !!ds.mapping.handlers.find(
+//       (handler) => handler.kind !== CardanoHandlerKind.Event,
+//     );
+//   } else if (isCustomDs(ds)) {
+//     // TODO this can be improved upon in the future.
+//     return true;
+//   }
+//   return true;
+// }
 
-export function isOnlyEventHandlers(project: SubqueryProject): boolean {
-  const hasNonEventHandler = !!project.dataSources.find((ds) =>
-    dsContainsNonEventHandlers(ds),
-  );
-  const hasNonEventTemplate = !!project.templates.find((ds) =>
-    dsContainsNonEventHandlers(ds as SubstrateProjectDs),
-  );
+// export function isOnlyEventHandlers(project: SubqueryProject): boolean {
+//   const hasNonEventHandler = !!project.dataSources.find((ds) =>
+//     dsContainsNonEventHandlers(ds),
+//   );
+//   const hasNonEventTemplate = !!project.templates.find((ds) =>
+//     dsContainsNonEventHandlers(ds as SubstrateProjectDs),
+//   );
 
-  return !hasNonEventHandler && !hasNonEventTemplate;
-}
+//   return !hasNonEventHandler && !hasNonEventTemplate;
+// }
 
 export function getStartChainPoint(
-  dataSources: SubstrateCustomDatasource[],
+  dataSources: CardanoCustomDatasource[],
 ): IChainTipSchema {
   if (dataSources.length === 0) {
     throw new Error(

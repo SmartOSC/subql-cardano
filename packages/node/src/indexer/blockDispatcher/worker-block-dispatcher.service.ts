@@ -18,7 +18,7 @@ import {
   createIndexerWorker as createIndexerWorkerCore,
   MonitorServiceInterface,
 } from '@subql/node-core';
-import { SubstrateBlock, SubstrateDatasource } from '@subql/types';
+import { CardanoBlock, CardanoDatasource } from '@subql/types';
 import { SubqueryProject } from '../../configure/SubqueryProject';
 import { ApiPromiseConnection } from '../apiPromise.connection';
 import { DynamicDsService } from '../dynamic-ds.service';
@@ -34,9 +34,9 @@ type IndexerWorker = IIndexerWorker & {
 @Injectable()
 export class WorkerBlockDispatcherService
   extends WorkerBlockDispatcher<
-    SubstrateDatasource,
+    CardanoDatasource,
     IndexerWorker,
-    SubstrateBlock
+    CardanoBlock
   >
   implements OnApplicationShutdown
 {
@@ -46,7 +46,7 @@ export class WorkerBlockDispatcherService
     nodeConfig: NodeConfig,
     eventEmitter: EventEmitter2,
     @Inject('IProjectService')
-    projectService: IProjectService<SubstrateDatasource>,
+    projectService: IProjectService<CardanoDatasource>,
     @Inject('IProjectUpgradeService')
     projectUpgadeService: IProjectUpgradeService,
     cacheService: InMemoryCacheService,
@@ -73,7 +73,7 @@ export class WorkerBlockDispatcherService
           IIndexerWorker,
           ApiPromiseConnection,
           BlockContent,
-          SubstrateDatasource
+          CardanoDatasource
         >(
           path.resolve(__dirname, '../../../dist/indexer/worker/worker.js'),
           ['syncRuntimeService', 'getSpecFromMap'],

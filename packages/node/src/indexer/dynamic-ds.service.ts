@@ -9,13 +9,13 @@ import {
 } from '@subql/node-core';
 import {
   SubqueryProject,
-  SubstrateProjectDs,
+  CardanoProjectDs,
 } from '../configure/SubqueryProject';
 import { DsProcessorService } from './ds-processor.service';
 
 @Injectable()
 export class DynamicDsService extends BaseDynamicDsService<
-  SubstrateProjectDs,
+CardanoProjectDs,
   SubqueryProject
 > {
   constructor(
@@ -28,8 +28,8 @@ export class DynamicDsService extends BaseDynamicDsService<
   // TODO: Custom Datasource for Cardano
   protected async getDatasource(
     params: DatasourceParams,
-  ): Promise<SubstrateProjectDs> {
-    const dsObj = this.getTemplate<SubstrateProjectDs>(
+  ): Promise<CardanoProjectDs> {
+    const dsObj = this.getTemplate<CardanoProjectDs>(
       params.templateName,
       params.startBlock,
     );

@@ -15,7 +15,7 @@ import {
   PoiSyncService,
   IBlock,
 } from '@subql/node-core';
-import { SubstrateDatasource } from '@subql/types';
+import { CardanoDatasource } from '@subql/types';
 import { SubqueryProject } from '../../configure/SubqueryProject';
 import { ApiService } from '../api.service';
 import { IndexerManager } from '../indexer.manager';
@@ -34,7 +34,7 @@ import {
 export class BlockDispatcherService
   extends BlockDispatcher<
     CardanoBlockContent | LightBlockContent,
-    SubstrateDatasource
+    CardanoDatasource
   >
   implements OnApplicationShutdown
 {
@@ -46,7 +46,7 @@ export class BlockDispatcherService
     private indexerManager: IndexerManager,
     eventEmitter: EventEmitter2,
     @Inject('IProjectService')
-    projectService: IProjectService<SubstrateDatasource>,
+    projectService: IProjectService<CardanoDatasource>,
     @Inject('IProjectUpgradeService')
     projectUpgradeService: IProjectUpgradeService,
     storeService: StoreService,

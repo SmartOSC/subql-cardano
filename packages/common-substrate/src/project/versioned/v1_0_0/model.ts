@@ -12,53 +12,53 @@ import {
   CommonProjectNetworkV1_0_0,
 } from '@subql/common';
 import {
-  SubstrateCustomDatasource,
-  SubstrateRuntimeDatasource,
+  CardanoCustomDatasource,
+  CardanoRuntimeDatasource,
   CustomDatasourceTemplate,
   RuntimeDatasourceTemplate,
-  SubstrateProjectManifestV1_0_0,
+  CardanoProjectManifestV1_0_0,
 } from '@subql/types';
 import {BaseMapping, NodeSpec, ParentProject, QuerySpec, RunnerSpecs} from '@subql/types-core';
 import {plainToInstance, Transform, TransformFnParams, Type} from 'class-transformer';
 import {Equals, IsArray, IsNotEmpty, IsObject, IsOptional, IsString, ValidateNested} from 'class-validator';
 import {CustomDataSourceBase, RuntimeDataSourceBase} from '../../models';
 
-const SUBSTRATE_NODE_NAME = `@subql/node`;
+const CARDANO_NODE_NAME = `@subql/node`;
 
-export class SubstrateRunnerNodeImpl extends RunnerNodeImpl {
-  @Equals(SUBSTRATE_NODE_NAME, {message: `Runner Substrate node name incorrect, suppose be '${SUBSTRATE_NODE_NAME}'`})
-  name: string = SUBSTRATE_NODE_NAME;
+export class CardanoRunnerNodeImpl extends RunnerNodeImpl {
+  @Equals(CARDANO_NODE_NAME, {message: `Runner Cardano node name incorrect, suppose be '${CARDANO_NODE_NAME}'`})
+  name: string = CARDANO_NODE_NAME;
 }
 
-export class SubstrateRuntimeDataSourceImpl extends RuntimeDataSourceBase implements SubstrateRuntimeDatasource {
+export class CardanoRuntimeDataSourceImpl extends RuntimeDataSourceBase implements CardanoRuntimeDatasource {
   validate(): void {
     return validateObject(this, 'failed to validate runtime datasource.');
   }
 }
 
-export class SubstrateCustomDataSourceImpl<K extends string = string, M extends BaseMapping<any> = BaseMapping<any>>
+export class CardanoCustomDataSourceImpl<K extends string = string, M extends BaseMapping<any> = BaseMapping<any>>
   extends CustomDataSourceBase<K, M>
-  implements SubstrateCustomDatasource<K, M>
+  implements CardanoCustomDatasource<K, M>
 {
   validate(): void {
     return validateObject(this, 'failed to validate custom datasource.');
   }
 }
 
-export class RuntimeDatasourceTemplateImpl extends SubstrateRuntimeDataSourceImpl implements RuntimeDatasourceTemplate {
+export class RuntimeDatasourceTemplateImpl extends CardanoRuntimeDataSourceImpl implements RuntimeDatasourceTemplate {
   @IsString()
   name!: string;
 }
 
-export class CustomDatasourceTemplateImpl extends SubstrateCustomDataSourceImpl implements CustomDatasourceTemplate {
+export class CustomDatasourceTemplateImpl extends CardanoCustomDataSourceImpl implements CustomDatasourceTemplate {
   @IsString()
   name!: string;
 }
 
-export class SubstrateRunnerSpecsImpl implements RunnerSpecs {
+export class CardanoRunnerSpecsImpl implements RunnerSpecs {
   @IsObject()
   @ValidateNested()
-  @Type(() => SubstrateRunnerNodeImpl)
+  @Type(() => CardanoRunnerNodeImpl)
   node!: NodeSpec;
   @IsObject()
   @ValidateNested()
@@ -99,25 +99,25 @@ export class DeploymentV1_0_0 extends BaseDeploymentV1_0_0 {
   network!: ProjectNetworkDeploymentV1_0_0;
   @IsObject()
   @ValidateNested()
-  @Type(() => SubstrateRunnerSpecsImpl)
+  @Type(() => CardanoRunnerSpecsImpl)
   runner!: RunnerSpecs;
   @IsArray()
   @ValidateNested()
-  @Type(() => SubstrateCustomDataSourceImpl, {
+  @Type(() => CardanoCustomDataSourceImpl, {
     discriminator: {
       property: 'kind',
-      subTypes: [{value: SubstrateRuntimeDataSourceImpl, name: 'substrate/Runtime'}],
+      subTypes: [{value: CardanoRuntimeDataSourceImpl, name: 'cardano/Runtime'}],
     },
     keepDiscriminatorProperty: true,
   })
-  dataSources!: (SubstrateRuntimeDatasource | SubstrateCustomDatasource)[];
+  dataSources!: (CardanoRuntimeDatasource | CardanoCustomDatasource)[];
   @IsOptional()
   @IsArray()
   @ValidateNested()
   @Type(() => CustomDatasourceTemplateImpl, {
     discriminator: {
       property: 'kind',
-      subTypes: [{value: RuntimeDatasourceTemplateImpl, name: 'substrate/Runtime'}],
+      subTypes: [{value: RuntimeDatasourceTemplateImpl, name: 'cardano/Runtime'}],
     },
     keepDiscriminatorProperty: true,
   })
@@ -126,7 +126,7 @@ export class DeploymentV1_0_0 extends BaseDeploymentV1_0_0 {
 
 export class ProjectManifestV1_0_0Impl
   extends ProjectManifestBaseImpl<DeploymentV1_0_0>
-  implements SubstrateProjectManifestV1_0_0
+  implements CardanoProjectManifestV1_0_0
 {
   constructor() {
     super(DeploymentV1_0_0);
@@ -134,14 +134,14 @@ export class ProjectManifestV1_0_0Impl
 
   @Equals('1.0.0')
   specVersion = '1.0.0';
-  @Type(() => SubstrateCustomDataSourceImpl, {
+  @Type(() => CardanoCustomDataSourceImpl, {
     discriminator: {
       property: 'kind',
-      subTypes: [{value: SubstrateRuntimeDataSourceImpl, name: 'substrate/Runtime'}],
+      subTypes: [{value: CardanoRuntimeDataSourceImpl, name: 'cardano/Runtime'}],
     },
     keepDiscriminatorProperty: true,
   })
-  dataSources!: (SubstrateRuntimeDatasource | SubstrateCustomDatasource)[];
+  dataSources!: (CardanoRuntimeDatasource | CardanoCustomDatasource)[];
   @Type(() => ProjectNetworkV1_0_0)
   network!: ProjectNetworkV1_0_0;
   @IsOptional()
@@ -158,14 +158,14 @@ export class ProjectManifestV1_0_0Impl
   @Type(() => CustomDatasourceTemplateImpl, {
     discriminator: {
       property: 'kind',
-      subTypes: [{value: RuntimeDatasourceTemplateImpl, name: 'substrate/Runtime'}],
+      subTypes: [{value: RuntimeDatasourceTemplateImpl, name: 'cardano/Runtime'}],
     },
     keepDiscriminatorProperty: true,
   })
   templates?: (RuntimeDatasourceTemplate | CustomDatasourceTemplate)[];
   @IsObject()
   @ValidateNested()
-  @Type(() => SubstrateRunnerSpecsImpl)
+  @Type(() => CardanoRunnerSpecsImpl)
   runner!: RunnerSpecs;
 
   @IsOptional()

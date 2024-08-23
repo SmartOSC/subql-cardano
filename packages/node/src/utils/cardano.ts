@@ -2,7 +2,6 @@ import { Header, IBlock } from '@subql/node-core';
 import {
   BlockContent,
   CardanoBlockContent,
-  CardanoEvent,
 } from '../indexer/types';
 import { CardanoClient } from '../indexer/cardano/CardanoClient';
 import { redis as redisClient, getChainTipByHeight } from './cache';

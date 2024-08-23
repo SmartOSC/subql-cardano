@@ -21,12 +21,12 @@ import {
 } from '@subql/node-core';
 import {
   SpecVersionRange,
-  SubstrateBlockFilter,
-  SubstrateCallFilter,
-  SubstrateEventFilter,
-  SubstrateBlock,
-  SubstrateEvent,
-  SubstrateExtrinsic,
+  CardanoBlockFilter,
+  CardanoCallFilter,
+  CardanoEventFilter,
+  CardanoBlock,
+  CardanoEvent,
+  CardanoExtrinsic,
   BlockHeader,
 } from '@subql/types';
 import { merge, range } from 'lodash';
@@ -51,7 +51,7 @@ export function wrapBlock(
   signedBlock: SignedBlock,
   events: EventRecord[],
   specVersion: number,
-): SubstrateBlock {
+): CardanoBlock {
   return merge(signedBlock, {
     timestamp: getTimestamp(signedBlock),
     specVersion: specVersion,
@@ -76,19 +76,21 @@ export function getTimestamp({ block: { extrinsics } }: SignedBlock): Date {
 }
 
 export function wrapExtrinsics(
-  wrappedBlock: SubstrateBlock,
-  allEvents: EventRecord[],
-): SubstrateExtrinsic[] {
-  return wrappedBlock.block.extrinsics.map((extrinsic, idx) => {
-    const events = filterExtrinsicEvents(idx, allEvents);
-    return {
-      idx,
-      extrinsic,
-      block: wrappedBlock,
-      events,
-      success: getExtrinsicSuccess(events),
-    };
-  });
+  // wrappedBlock: CardanoEvent,
+
+  // allEvents: EventRecord[],
+): CardanoExtrinsic[] {
+  return []
+  // return wrappedBlock.block.extrinsics.map((extrinsic, idx) => {
+  //   const events = filterExtrinsicEvents(idx, allEvents);
+  //   return {
+  //     idx,
+  //     extrinsic,
+  //     block: wrappedBlock,
+  //     events,
+  //     success: getExtrinsicSuccess(events),
+  //   };
+  // });
 }
 
 function getExtrinsicSuccess(events: EventRecord[]): boolean {
@@ -108,19 +110,19 @@ function filterExtrinsicEvents(
 }
 
 export function wrapEvents(
-  extrinsics: SubstrateExtrinsic[],
+  extrinsics: CardanoExtrinsic[],
   events: EventRecord[],
-  block: SubstrateBlock,
-): SubstrateEvent[] {
+  block: CardanoBlock,
+): CardanoEvent[] {
   return events.reduce((acc, event, idx) => {
     const { phase } = event;
-    const wrappedEvent: SubstrateEvent = merge(event, { idx, block });
+    const wrappedEvent: CardanoEvent = merge(event, { idx, block });
     if (phase.isApplyExtrinsic) {
       wrappedEvent.extrinsic = extrinsics[phase.asApplyExtrinsic.toNumber()];
     }
     acc.push(wrappedEvent);
     return acc;
-  }, [] as SubstrateEvent[]);
+  }, [] as CardanoEvent[]);
 }
 
 function checkSpecRange(
@@ -137,9 +139,9 @@ function checkSpecRange(
 }
 
 export function filterBlock(
-  block: SubstrateBlock,
-  filter?: SubstrateBlockFilter,
-): SubstrateBlock | undefined {
+  block: CardanoBlock,
+  filter?: CardanoBlockFilter,
+): CardanoBlock | undefined {
   if (!filter) return block;
   if (!filterBlockModulo(block, filter)) return;
   if (
@@ -158,8 +160,8 @@ export function filterBlock(
 }
 
 export function filterBlockModulo(
-  block: SubstrateBlock,
-  filter: SubstrateBlockFilter,
+  block: CardanoBlock,
+  filter: CardanoBlockFilter,
 ): boolean {
   const { modulo } = filter;
   if (!modulo) return true;
@@ -167,8 +169,8 @@ export function filterBlockModulo(
 }
 
 export function filterExtrinsic(
-  { block, extrinsic, success }: SubstrateExtrinsic,
-  filter?: SubstrateCallFilter,
+  { block, extrinsic, success }: CardanoExtrinsic,
+  filter?: CardanoCallFilter,
 ): boolean {
   if (!filter) return true;
   return (
@@ -185,9 +187,9 @@ export function filterExtrinsic(
 }
 
 export function filterExtrinsics(
-  extrinsics: SubstrateExtrinsic[],
-  filterOrFilters: SubstrateCallFilter | SubstrateCallFilter[] | undefined,
-): SubstrateExtrinsic[] {
+  extrinsics: CardanoExtrinsic[],
+  filterOrFilters: CardanoCallFilter | CardanoCallFilter[] | undefined,
+): CardanoExtrinsic[] {
   if (
     !filterOrFilters ||
     (filterOrFilters instanceof Array && filterOrFilters.length === 0)
@@ -202,8 +204,8 @@ export function filterExtrinsics(
 }
 
 export function filterEvent(
-  { block, event }: SubstrateEvent,
-  filter?: SubstrateEventFilter,
+  { block, event }: CardanoEvent,
+  filter?: CardanoEventFilter,
 ): boolean {
   if (!filter) return true;
   return (
@@ -216,9 +218,9 @@ export function filterEvent(
 }
 
 export function filterEvents(
-  events: SubstrateEvent[],
-  filterOrFilters?: SubstrateEventFilter | SubstrateEventFilter[] | undefined,
-): SubstrateEvent[] {
+  events: CardanoEvent[],
+  filterOrFilters?: CardanoEventFilter | CardanoEventFilter[] | undefined,
+): CardanoEvent[] {
   if (
     !filterOrFilters ||
     (filterOrFilters instanceof Array && filterOrFilters.length === 0)
@@ -387,7 +389,7 @@ export async function fetchBlocksBatches(
     assert(parentSpecVersion !== undefined, 'parentSpecVersion is undefined');
 
     const wrappedBlock = wrapBlock(block, events.toArray(), parentSpecVersion);
-    const wrappedExtrinsics = wrapExtrinsics(wrappedBlock, events);
+    const wrappedExtrinsics = wrapExtrinsics();
     const wrappedEvents = wrapEvents(wrappedExtrinsics, events, wrappedBlock);
 
     return {
@@ -431,7 +433,7 @@ export async function fetchLightBlock(
   return {
     block: {
       block: blockHeader,
-      events: events.map((evt, idx) => merge(evt, { idx, block: blockHeader })),
+      // events: events.map((evt, idx) => merge(evt, { idx, block: blockHeader })),
     },
     getHeader: () => {
       return substrateHeaderToHeader(blockHeader.block.header);

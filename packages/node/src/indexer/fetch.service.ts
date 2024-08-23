@@ -6,7 +6,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { ApiPromise } from '@polkadot/api';
 
-import { isCustomDs, SubstrateHandlerKind } from '@subql/common-substrate';
+import { isCustomDs, CardanoHandlerKind } from '@subql/common-substrate';
 import {
   NodeConfig,
   BaseFetchService,
@@ -24,11 +24,11 @@ import {
   transformBypassBlocks,
 } from '@subql/node-core';
 import util from 'util';
-import { SubstrateDatasource, SubstrateBlock } from '@subql/types';
+import { CardanoDatasource, CardanoBlock } from '@subql/types';
 import { SubqueryProject } from '../configure/SubqueryProject';
 import { substrateHeaderToHeader } from '../utils/substrate';
 import { ApiService } from './api.service';
-import { ISubstrateBlockDispatcher } from './blockDispatcher/substrate-block-dispatcher';
+import { ISubstrateBlockDispatcher } from './blockDispatcher/cardano-block-dispatcher';
 import { SubstrateDictionaryService } from './dictionary/substrateDictionary.service';
 import { ProjectService } from './project.service';
 import { RuntimeService } from './runtime/runtimeService';
@@ -52,9 +52,9 @@ const wokerLogger = getLogger('WorkerSyncCardano');
 @Injectable()
 export class FetchService
   extends BaseFetchService<
-    SubstrateDatasource,
+    CardanoDatasource,
     ISubstrateBlockDispatcher,
-    SubstrateBlock
+    CardanoBlock
   >
   implements OnApplicationShutdown
 {
@@ -130,8 +130,8 @@ export class FetchService
     return Math.min(BLOCK_TIME_VARIANCE, chainInterval);
   }
 
-  protected getModulos(dataSources: SubstrateDatasource[]): number[] {
-    return getModulos(dataSources, isCustomDs, SubstrateHandlerKind.Block);
+  protected getModulos(dataSources: CardanoDatasource[]): number[] {
+    return getModulos(dataSources, isCustomDs, CardanoHandlerKind.Block);
   }
 
   protected async initBlockDispatcher(): Promise<void> {
@@ -176,7 +176,7 @@ export class FetchService
 
   private _getRelevantDsDetails(startBlockHeight: number): {
     endHeight: number | undefined;
-    value: SubstrateDatasource[];
+    value: CardanoDatasource[];
   } {
     const details = this.projectService
       .getDataSourcesMap()
@@ -346,7 +346,7 @@ export class FetchService
   }
 
   private async _enqueueBlocks(
-    enqueuingBlocks: (IBlock<SubstrateBlock> | number)[],
+    enqueuingBlocks: (IBlock<CardanoBlock> | number)[],
     latestHeight: number,
   ): Promise<void> {
     const cleanedBatchBlocks = this._filteredBlockBatch(enqueuingBlocks);
@@ -368,8 +368,8 @@ export class FetchService
    * @private
    */
   private _getLatestBufferHeight(
-    cleanedBatchBlocks: (IBlock<SubstrateBlock> | number)[],
-    rawBatchBlocks: (IBlock<SubstrateBlock> | number)[],
+    cleanedBatchBlocks: (IBlock<CardanoBlock> | number)[],
+    rawBatchBlocks: (IBlock<CardanoBlock> | number)[],
     latestHeight: number,
   ): number {
     // When both BatchBlocks are empty, mean no blocks to enqueue and full synced,
@@ -383,8 +383,8 @@ export class FetchService
   }
 
   private _filteredBlockBatch(
-    currentBatchBlocks: (number | IBlock<SubstrateBlock>)[],
-  ): (number | IBlock<SubstrateBlock>)[] {
+    currentBatchBlocks: (number | IBlock<CardanoBlock>)[],
+  ): (number | IBlock<CardanoBlock>)[] {
     if (!this._bypassBlocks.length || !currentBatchBlocks) {
       return currentBatchBlocks;
     }

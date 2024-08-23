@@ -15,7 +15,7 @@ import {
   exitWithError,
   getLogger,
 } from '@subql/node-core';
-import { SubstrateDatasource } from '@subql/types';
+import { CardanoDatasource } from '@subql/types';
 import { Sequelize } from '@subql/x-sequelize';
 import { SubqueryProject } from '../configure/SubqueryProject';
 import { ApiService } from './api.service';
@@ -23,7 +23,7 @@ import { DsProcessorService } from './ds-processor.service';
 import { DynamicDsService } from './dynamic-ds.service';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
 import { getStartChainPoint } from '../utils/project';
-import { SubstrateCustomDataSource } from '@subql/common-substrate';
+import { CardanoCustomDataSource } from '@subql/common-substrate';
 import { IChainTipSchema } from '../utils/cache';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -32,7 +32,7 @@ const { version: packageVersion } = require('../../package.json');
 @Injectable()
 export class ProjectService extends BaseProjectService<
   ApiService,
-  SubstrateDatasource
+  CardanoDatasource
 > {
   protected packageVersion = packageVersion;
 
@@ -89,7 +89,7 @@ export class ProjectService extends BaseProjectService<
   getStartChainPointFromDataSources(): IChainTipSchema {
     try {
       return getStartChainPoint(
-        this.project.dataSources as unknown as SubstrateCustomDataSource[],
+        this.project.dataSources as unknown as CardanoCustomDataSource[],
       );
     } catch (e: any) {
       exitWithError(e, getLogger('Project'));

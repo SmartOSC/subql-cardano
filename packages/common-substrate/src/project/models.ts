@@ -4,19 +4,19 @@
 import {RegisteredTypes, RegistryTypes, OverrideModuleType, OverrideBundleType} from '@polkadot/types/types';
 import {BaseDataSource, BlockFilterImpl, ProcessorImpl} from '@subql/common';
 import {
-  SubstrateBlockFilter,
-  SubstrateBlockHandler,
-  SubstrateCallFilter,
-  SubstrateCallHandler,
-  SubstrateCustomHandler,
-  SubstrateDatasourceKind,
-  SubstrateEventFilter,
-  SubstrateEventHandler,
-  SubstrateHandlerKind,
+  CardanoBlockFilter,
   CardanoBlockHandler,
-  SubstrateRuntimeDatasource,
-  SubstrateRuntimeHandler,
-  SubstrateCustomDatasource,
+  CardanoCallFilter,
+  CardanoCallHandler,
+  CardanoCustomHandler,
+  CardanoDatasourceKind,
+  CardanoEventFilter,
+  // CardanoEventHandler,
+  CardanoHandlerKind,
+  // CardanoBlockHandler,
+  CardanoRuntimeDatasource,
+  CardanoRuntimeHandler,
+  CardanoCustomDatasource,
 } from '@subql/types';
 import {BaseMapping, FileReference, Processor} from '@subql/types-core';
 import {plainToClass, Transform, Type} from 'class-transformer';
@@ -31,14 +31,14 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-export class BlockFilter extends BlockFilterImpl implements SubstrateBlockFilter {
+export class BlockFilter extends BlockFilterImpl implements CardanoBlockFilter {
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(2)
   specVersion?: [number, number];
 }
 
-export class EventFilter implements SubstrateEventFilter {
+export class EventFilter implements CardanoEventFilter {
   @IsOptional()
   @IsString()
   module?: string;
@@ -65,7 +65,7 @@ export class ChainTypes implements RegisteredTypes {
   typesSpec?: Record<string, RegistryTypes>;
 }
 
-export class CallFilter extends EventFilter implements SubstrateCallFilter {
+export class CallFilter extends EventFilter implements CardanoCallFilter {
   @IsOptional()
   @IsBoolean()
   success?: boolean;
@@ -74,40 +74,40 @@ export class CallFilter extends EventFilter implements SubstrateCallFilter {
   isSigned?: boolean;
 }
 
-export class BlockHandler implements SubstrateBlockHandler {
+export class BlockHandler implements CardanoBlockHandler {
   @IsOptional()
   @ValidateNested()
   @Type(() => BlockFilter)
-  filter?: SubstrateBlockFilter;
-  @IsEnum(SubstrateHandlerKind, {groups: [SubstrateHandlerKind.Block, SubstrateHandlerKind.CardanoBlock]})
-  kind!: SubstrateHandlerKind.Block;
+  filter?: CardanoBlockFilter;
+  @IsEnum(CardanoHandlerKind, {groups: [CardanoHandlerKind.Block]})
+  kind!: CardanoHandlerKind.Block;
   @IsString()
   handler!: string;
 }
 
-export class CallHandler implements SubstrateCallHandler {
+export class CallHandler implements CardanoCallHandler {
   @IsOptional()
   @ValidateNested()
   @Type(() => CallFilter)
-  filter?: SubstrateCallFilter;
-  @IsEnum(SubstrateHandlerKind, {groups: [SubstrateHandlerKind.Call]})
-  kind!: SubstrateHandlerKind.Call;
+  filter?: CardanoCallFilter;
+  @IsEnum(CardanoHandlerKind, {groups: [CardanoHandlerKind.Call]})
+  kind!: CardanoHandlerKind.Call;
   @IsString()
   handler!: string;
 }
 
-export class EventHandler implements SubstrateEventHandler {
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => EventFilter)
-  filter?: SubstrateEventFilter;
-  @IsEnum(SubstrateHandlerKind, {groups: [SubstrateHandlerKind.Event]})
-  kind!: SubstrateHandlerKind.Event;
-  @IsString()
-  handler!: string;
-}
+// export class EventHandler implements SubstrateEventHandler {
+//   @IsOptional()
+//   @ValidateNested()
+//   @Type(() => EventFilter)
+//   filter?: CardanoEventFilter;
+//   @IsEnum(SubstrateHandlerKind, {groups: [SubstrateHandlerKind.Event]})
+//   kind!: SubstrateHandlerKind.Event;
+//   @IsString()
+//   handler!: string;
+// }
 
-export class CustomHandler implements SubstrateCustomHandler {
+export class CustomHandler implements CardanoCustomHandler {
   @IsString()
   kind!: string;
   @IsString()
@@ -117,19 +117,17 @@ export class CustomHandler implements SubstrateCustomHandler {
   filter?: Record<string, unknown>;
 }
 
-export class RuntimeMapping implements BaseMapping<SubstrateRuntimeHandler> {
+export class RuntimeMapping implements BaseMapping<CardanoRuntimeHandler> {
   @Transform((params) => {
-    const handlers: SubstrateRuntimeHandler[] = params.value;
+    const handlers: CardanoRuntimeHandler[] = params.value;
     return handlers.map((handler) => {
       switch (handler.kind) {
-        case SubstrateHandlerKind.Event:
-          return plainToClass(EventHandler, handler);
-        case SubstrateHandlerKind.Call:
+        case CardanoHandlerKind.Call:
           return plainToClass(CallHandler, handler);
-        case SubstrateHandlerKind.Block:
+        case CardanoHandlerKind.Block:
           return plainToClass(BlockHandler, handler);
-        case SubstrateHandlerKind.CardanoBlock:
-          return plainToClass(BlockHandler, handler);
+        // case CardanoHandlerKind.CardanoBlock:
+        //   return plainToClass(BlockHandler, handler);
         default:
           throw new Error(`handler ${(handler as any).kind} not supported`);
       }
@@ -137,12 +135,12 @@ export class RuntimeMapping implements BaseMapping<SubstrateRuntimeHandler> {
   })
   @IsArray()
   @ValidateNested()
-  handlers!: SubstrateRuntimeHandler[];
+  handlers!: CardanoRuntimeHandler[];
   @IsString()
   file!: string;
 }
 
-export class CustomMapping implements BaseMapping<SubstrateCustomHandler> {
+export class CustomMapping implements BaseMapping<CardanoCustomHandler> {
   @IsArray()
   @Type(() => CustomHandler)
   @ValidateNested()
@@ -151,9 +149,9 @@ export class CustomMapping implements BaseMapping<SubstrateCustomHandler> {
   file!: string;
 }
 
-export class RuntimeDataSourceBase extends BaseDataSource implements SubstrateRuntimeDatasource {
-  @IsEnum(SubstrateDatasourceKind, {groups: [SubstrateDatasourceKind.Runtime]})
-  kind!: SubstrateDatasourceKind.Runtime;
+export class RuntimeDataSourceBase extends BaseDataSource implements CardanoRuntimeDatasource {
+  @IsEnum(CardanoDatasourceKind, {groups: [CardanoDatasourceKind.Runtime]})
+  kind!: CardanoDatasourceKind.Runtime;
   @Type(() => RuntimeMapping)
   @ValidateNested()
   mapping!: RuntimeMapping;
@@ -166,7 +164,7 @@ export class FileReferenceImpl implements FileReference {
 
 export class CustomDataSourceBase<K extends string, M extends CustomMapping, O = any>
   extends BaseDataSource
-  implements SubstrateCustomDatasource<K, M, O>
+  implements CardanoCustomDatasource<K, M, O>
 {
   @IsString()
   kind!: K;
