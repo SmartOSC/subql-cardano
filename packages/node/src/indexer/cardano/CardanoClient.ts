@@ -35,12 +35,11 @@ export class CardanoClient {
    */
   async getHeader(): Promise<Header> {
     logger.info('Get Header Starting ...');
+    // Get latest tip -> point
+    const { chainSyncClient, socket: chainSyncSocket } =
+      await this.miniClient.connectChainSyncClient();
     try {
-      // Get latest tip -> point
-      const { chainSyncClient, socket: chainSyncSocket } =
-        await this.miniClient.connectChainSyncClient();
       const { tip: chainTip } = await chainSyncClient.requestNext();
-      this.disconnect(chainSyncClient, chainSyncSocket);
 
       // Get latest block header
       const { blockFetchClient, socket: blockFetchSocket } =
@@ -70,6 +69,8 @@ export class CardanoClient {
       };
     } catch (error) {
       logger.info('Get Header ERR: ', error);
+    } finally {
+      this.disconnect(chainSyncClient, chainSyncSocket);
     }
     logger.info('Get Header Retry');
     return this.getHeader();
@@ -83,18 +84,19 @@ export class CardanoClient {
     toChainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock[]> {
     logger.info('Get Blocks By Range Starting ...');
+    // Get latest tip -> point
+    const { blockFetchClient, socket } =
+      await this.miniClient.connectBlockFetchClient();
     try {
-      // Get latest tip -> point
-      const { blockFetchClient, socket } =
-        await this.miniClient.connectBlockFetchClient();
       const result = await blockFetchClient.requestRange(
         fromChainPoint,
         toChainPoint,
       );
-      this.disconnect(blockFetchClient, socket);
       return result;
     } catch (error) {
       logger.error('Get Blocks By Range ERR: ', error);
+    } finally {
+      this.disconnect(blockFetchClient, socket);
     }
     logger.info('Get Blocks By Range Retry');
     return this.getBlocksByRangePoint(fromChainPoint, toChainPoint);
@@ -104,14 +106,15 @@ export class CardanoClient {
     chainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock> {
     logger.info('Get Blocks By Point Starting ...');
+    const { blockFetchClient, socket } =
+      await this.miniClient.connectBlockFetchClient();
     try {
-      const { blockFetchClient, socket } =
-        await this.miniClient.connectBlockFetchClient();
       const block = await blockFetchClient.request(chainPoint);
-      this.disconnect(blockFetchClient, socket);
       return block;
     } catch (error) {
       logger.error('Get Blocks By Point ERR: ', error);
+    } finally {
+      this.disconnect(blockFetchClient, socket);
     }
     logger.info('Get Blocks By Point Starting ...');
     return this.getBlockByPoint(chainPoint);
@@ -119,13 +122,12 @@ export class CardanoClient {
 
   async requestNextFromStartPoint(point: IChainPoint): Promise<IChainTip> {
     logger.info('Request Next From Start Point Starting ...');
+    const { chainSyncClient, socket } =
+      await this.miniClient.connectChainSyncClient();
     try {
-      const { chainSyncClient, socket } =
-        await this.miniClient.connectChainSyncClient();
       const intersect = await chainSyncClient.findIntersect([point]);
       const rollBackwards = await chainSyncClient.requestNext();
       const rollForwards = await chainSyncClient.requestNext();
-      this.disconnect(chainSyncClient, socket);
 
       if (rollForwards instanceof ChainSyncRollForward) {
         const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
@@ -154,6 +156,8 @@ export class CardanoClient {
       }
     } catch (error) {
       logger.error('Request Next From Start Point ERR: ', error);
+    } finally {
+      this.disconnect(chainSyncClient, socket);
     }
     throw new Error('Request Next From Start Point failed: not found point');
   }
@@ -161,18 +165,24 @@ export class CardanoClient {
   async requestNext(): Promise<IChainTip> {
     const { chainSyncClient, socket: chainSyncSocket } =
       await this.miniClient.connectChainSyncClient();
-    const { tip: chainTip } = await chainSyncClient.requestNext();
-    this.disconnect(chainSyncClient, chainSyncSocket);
+    try {
+      const { tip: chainTip } = await chainSyncClient.requestNext();
 
-    return {
-      point: {
-        blockHeader: {
-          hash: chainTip.point.blockHeader?.hash ?? new Uint8Array(),
-          slotNumber: chainTip.point.blockHeader?.slotNumber ?? 0,
+      return {
+        point: {
+          blockHeader: {
+            hash: chainTip.point.blockHeader?.hash ?? new Uint8Array(),
+            slotNumber: chainTip.point.blockHeader?.slotNumber ?? 0,
+          },
         },
-      },
-      blockNo: chainTip.blockNo,
-    };
+        blockNo: chainTip.blockNo,
+      };
+    } catch (error) {
+      logger.error('Request Next ERR: ', error);
+    } finally {
+      this.disconnect(chainSyncClient, chainSyncSocket);
+    }
+    throw new Error('Request Next failed');
   }
 
   async findIntersect(
@@ -180,9 +190,16 @@ export class CardanoClient {
   ): Promise<ChainSyncIntersectFound | ChainSyncIntersectNotFound> {
     const { chainSyncClient, socket } =
       await this.miniClient.connectChainSyncClient();
-    const currentData = await chainSyncClient.findIntersect([point]);
-    this.disconnect(chainSyncClient, socket);
-    return currentData;
+    try {
+      const currentData = await chainSyncClient.findIntersect([point]);
+      return currentData;
+    } catch (error) {
+      logger.error('Request Find Intersect ERR: ', error);
+    } finally {
+      this.disconnect(chainSyncClient, socket);
+    }
+
+    throw new Error('Request Find Intersect failed');
   }
 
   disconnect(client: BlockFetchClient | ChainSyncClient, socket: Socket): void {
@@ -191,14 +208,5 @@ export class CardanoClient {
   }
 
   getBlockRegistry() {}
-  apiDisconnect() {
-    // this.miniClient.disconnect(
-    //   this.miniClient.blockFetchClient,
-    //   this.miniClient.socket,
-    // );
-    // this.miniClient.disconnect(
-    //   this.miniClient.chainSyncClient,
-    //   this.miniClient.socket,
-    // );
-  }
+  apiDisconnect() {}
 }
