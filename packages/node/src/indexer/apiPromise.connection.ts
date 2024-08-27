@@ -86,8 +86,10 @@ export class ApiPromiseConnection
       ...args.chainTypes,
     };
 
+    provider.disconnect()
+
     // TODO: Load endpoint from datasource
-    const miniClient = new MiniProtocolClient()
+    const miniClient = new MiniProtocolClient(endpoint)
     const api = new CardanoClient(miniClient);
     return new ApiPromiseConnection(api, fetchBlocksBatches);
   }

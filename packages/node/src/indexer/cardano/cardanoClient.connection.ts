@@ -50,7 +50,7 @@ export class CardanoClientConnection
     endpoint: string,
     fetchBlocksBatches: FetchFunc,
   ): Promise<CardanoClientConnection> {
-    const miniClient = new MiniProtocolClient();
+    const miniClient = new MiniProtocolClient(endpoint);
 
     const api = new CardanoClient(miniClient);
     const connection = new CardanoClientConnection(api, fetchBlocksBatches);

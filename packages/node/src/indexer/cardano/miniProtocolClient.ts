@@ -20,7 +20,7 @@ export class MiniProtocolClient {
   private chainSyncClient!: ChainSyncClient;
   private socket!: Socket;
 
-  constructor() {}
+  constructor(private readonly endpoint: string) {}
 
   async performHandshake(mplexer: Multiplexer, networkMagic: number) {
     return new Promise<void>((resolve, reject) => {
@@ -67,9 +67,10 @@ export class MiniProtocolClient {
     await redis.incr('num_of_socket');
     try {
       // connection harmoniclabs
+      const url = new URL(this.endpoint)
       const socket = connect({
-        host: 'dev.cf-ibc-testnet-mithril-sidechain.metadata.dev.cf-deployments.org',
-        port: 3001,
+        host: url.hostname,
+        port: Number(url.port || 3001),
         keepAlive: false,
         keepAliveInitialDelay: 0,
         timeout: 10000,
@@ -120,10 +121,10 @@ export class MiniProtocolClient {
   }> {
     await redis.incr('num_of_socket');
     try {
-      // await redis.incr('number_of_socket');
+      const url = new URL(this.endpoint)
       const socket = connect({
-        host: 'dev.cf-ibc-testnet-mithril-sidechain.metadata.dev.cf-deployments.org',
-        port: 3001,
+        host: url.hostname,
+        port: Number(url.port || 3001),  
         keepAlive: false,
         keepAliveInitialDelay: 0,
         timeout: 10000,
