@@ -7,16 +7,13 @@ import { ApiDecoration } from '@polkadot/api/types';
 import type { HexString } from '@polkadot/util/types';
 import {
   BlockHeader,
-  LightSubstrateEvent,
-  SubstrateBlock,
-  SubstrateEvent,
-  SubstrateExtrinsic,
+  CardanoBlock,
+  CardanoExtrinsic,
 } from '@subql/types';
 
 export interface BlockContent {
-  block: SubstrateBlock;
-  extrinsics: SubstrateExtrinsic[];
-  events: SubstrateEvent[];
+  block: CardanoBlock;
+  extrinsics: CardanoExtrinsic[];
 }
 
 export interface Attribute {
@@ -28,22 +25,15 @@ export interface Event {
   readonly attributes: readonly Attribute[];
 }
 
-export interface CardanoEvent {
-  idx: number;
-  event: Event;
-}
-
 export interface CardanoBlockContent {
   block: {
     multiEraBlock: MultiEraBlock;
     cborHexBlock: string;
   };
-  events: SubstrateEvent[];
 }
 
 export interface LightBlockContent {
   block: BlockHeader; // A subset of SubstrateBlock
-  events: LightSubstrateEvent[];
 }
 
 export type BestBlocks = Record<number, HexString>;

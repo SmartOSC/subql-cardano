@@ -7,13 +7,13 @@ import { RuntimeVersion } from '@polkadot/types/interfaces';
 import {
   isBlockHandlerProcessor,
   isCallHandlerProcessor,
-  isEventHandlerProcessor,
+  // isEventHandlerProcessor,
   isCustomDs,
   isRuntimeDs,
-  SubstrateCustomDataSource,
-  SubstrateHandlerKind,
-  SubstrateRuntimeHandlerInputMap,
-} from '@subql/common-substrate';
+  CardanoCustomDataSource,
+  CardanoHandlerKind,
+  CardanoRuntimeHandlerInputMap,
+} from '@subql/common-cardano';
 import {
   NodeConfig,
   profiler,
@@ -24,15 +24,15 @@ import {
   IBlock,
 } from '@subql/node-core';
 import {
-  LightSubstrateEvent,
-  SubstrateBlock,
-  SubstrateBlockFilter,
-  SubstrateDatasource,
-  SubstrateEvent,
-  SubstrateExtrinsic,
+  LightCardanoEvent,
+  CardanoBlock,
+  CardanoBlockFilter,
+  CardanoDatasource,
+  CardanoEvent,
+  CardanoExtrinsic,
 } from '@subql/types';
-import { SubstrateProjectDs } from '../configure/SubqueryProject';
-import * as SubstrateUtil from '../utils/substrate';
+import { CardanoProjectDs } from '../configure/SubqueryProject';
+import * as CardanoUtil from '../utils/cardano';
 import { ApiService as CardanoApiService } from './api.service';
 import { DsProcessorService } from './ds-processor.service';
 import { DynamicDsService } from './dynamic-ds.service';
@@ -46,7 +46,7 @@ import {
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
 import { CardanoSafeClient } from './cardano/cardanoClient.connection';
 import { CardanoClient } from './cardano/CardanoClient';
-import { MultiEraBlock as CardanoBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
+// import { MultiEraBlock as CardanoBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { CustomSandboxService } from './customSandbox.service';
 
 @Injectable()
@@ -55,11 +55,11 @@ export class IndexerManager extends BaseIndexerManager<
   CardanoSafeClient,
   CardanoBlockContent | LightBlockContent,
   CardanoApiService,
-  SubstrateDatasource,
-  SubstrateCustomDataSource,
+  CardanoDatasource,
+  CardanoCustomDataSource,
   typeof FilterTypeMap,
   typeof ProcessorTypeMap,
-  SubstrateRuntimeHandlerInputMap
+  CardanoRuntimeHandlerInputMap
 > {
   protected isRuntimeDs = isRuntimeDs;
   protected isCustomDs = isCustomDs;
@@ -87,7 +87,7 @@ export class IndexerManager extends BaseIndexerManager<
   @profiler()
   async indexBlock(
     block: IBlock<CardanoBlockContent | LightBlockContent>,
-    dataSources: SubstrateDatasource[],
+    dataSources: CardanoDatasource[],
     runtimeVersion?: RuntimeVersion,
   ): Promise<ProcessBlockResponse> {
     return super.internalIndexBlock(block, dataSources, () =>
@@ -110,13 +110,13 @@ export class IndexerManager extends BaseIndexerManager<
 
   protected async indexBlockData(
     blockContent: LightBlockContent | CardanoBlockContent,
-    dataSources: SubstrateProjectDs[],
-    getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
+    dataSources: CardanoProjectDs[],
+    getVM: (d: CardanoProjectDs) => Promise<IndexerSandbox>,
   ): Promise<void> {
     if (isFullBlock(blockContent)) {
       const {
         block: { cborHexBlock },
-        events,
+        // events,
       } = blockContent;
       await this.indexBlockContent(cborHexBlock, dataSources, getVM);
 
@@ -140,10 +140,10 @@ export class IndexerManager extends BaseIndexerManager<
       // }
 
       // Run finalization events
-      const finalizeEvents = events.filter((evt) => evt.phase.isFinalization);
-      for (const event of finalizeEvents) {
-        await this.indexEvent(event, dataSources, getVM);
-      }
+      // const finalizeEvents = events.filter((evt) => evt.phase.isFinalization);
+      // for (const event of finalizeEvents) {
+      //   await this.indexEvent(event, dataSources, getVM);
+      // }
     } else {
       // for (const event of blockContent.events) {
       //   await this.indexEvent(event, dataSources, getVM);
@@ -153,36 +153,36 @@ export class IndexerManager extends BaseIndexerManager<
 
   private async indexBlockContent(
     block: string,
-    dataSources: SubstrateProjectDs[],
-    getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
+    dataSources: CardanoProjectDs[],
+    getVM: (d: CardanoProjectDs) => Promise<IndexerSandbox>,
   ): Promise<void> {
     for (const ds of dataSources) {
-      await this.indexData(SubstrateHandlerKind.CardanoBlock, block, ds, getVM);
+      await this.indexData(CardanoHandlerKind.Block, block, ds, getVM);
     }
   }
 
   private async indexExtrinsic(
-    extrinsic: SubstrateExtrinsic,
-    dataSources: SubstrateProjectDs[],
-    getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
+    extrinsic: CardanoExtrinsic,
+    dataSources: CardanoProjectDs[],
+    getVM: (d: CardanoProjectDs) => Promise<IndexerSandbox>,
   ): Promise<void> {
     for (const ds of dataSources) {
-      await this.indexData(SubstrateHandlerKind.Call, extrinsic, ds, getVM);
+      await this.indexData(CardanoHandlerKind.Call, extrinsic, ds, getVM);
     }
   }
 
-  private async indexEvent(
-    event: SubstrateEvent | LightSubstrateEvent,
-    dataSources: SubstrateProjectDs[],
-    getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
-  ): Promise<void> {
-    for (const ds of dataSources) {
-      await this.indexData(SubstrateHandlerKind.Event, event, ds, getVM);
-    }
-  }
+  // private async indexEvent(
+  //   event: SubstrateEvent | LightSubstrateEvent,
+  //   dataSources: SubstrateProjectDs[],
+  //   getVM: (d: SubstrateProjectDs) => Promise<IndexerSandbox>,
+  // ): Promise<void> {
+  //   for (const ds of dataSources) {
+  //     await this.indexData(CardanoHandlerKind.Event, event, ds, getVM);
+  //   }
+  // }
 
   protected async prepareFilteredData<T = any>(
-    kind: SubstrateHandlerKind,
+    kind: CardanoHandlerKind,
     data: T,
   ): Promise<T> {
     // Substrate doesn't need to do anything here
@@ -191,21 +191,15 @@ export class IndexerManager extends BaseIndexerManager<
 }
 
 const ProcessorTypeMap = {
-  [SubstrateHandlerKind.Block]: isBlockHandlerProcessor,
-  [SubstrateHandlerKind.CardanoBlock]: isBlockHandlerProcessor,
-  [SubstrateHandlerKind.Event]: isEventHandlerProcessor,
-  [SubstrateHandlerKind.Call]: isCallHandlerProcessor,
+  [CardanoHandlerKind.Block]: isBlockHandlerProcessor,
+  // [CardanoHandlerKind.CardanoBlock]: isBlockHandlerProcessor,
+  [CardanoHandlerKind.Call]: isCallHandlerProcessor,
 };
 
 const FilterTypeMap = {
-  [SubstrateHandlerKind.Block]: (
-    block: SubstrateBlock,
-    filter?: SubstrateBlockFilter,
-  ) => !!SubstrateUtil.filterBlock(block, filter),
-  [SubstrateHandlerKind.CardanoBlock]: (
-    block: SubstrateBlock,
-    filter?: SubstrateBlockFilter,
-  ) => !!SubstrateUtil.filterBlock(block, filter),
-  [SubstrateHandlerKind.Event]: SubstrateUtil.filterEvent,
-  [SubstrateHandlerKind.Call]: SubstrateUtil.filterExtrinsic,
+  [CardanoHandlerKind.Block]: (
+    block: CardanoBlock,
+    filter?: CardanoBlockFilter,
+  ) => !!CardanoUtil.filterBlock(block, filter),
+  [CardanoHandlerKind.Call]: CardanoUtil.filterExtrinsic,
 };

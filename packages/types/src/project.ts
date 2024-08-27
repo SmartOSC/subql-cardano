@@ -21,85 +21,76 @@ import {
   SecondLayerHandlerProcessor_1_0_0,
   DsProcessor,
 } from '@subql/types-core';
-import {LightSubstrateEvent, SubstrateBlock, SubstrateEvent, SubstrateExtrinsic} from './interfaces';
+import {LightCardanoEvent, CardanoBlock, CardanoEvent, CardanoExtrinsic} from './interfaces';
 
-export type RuntimeDatasourceTemplate = BaseTemplateDataSource<SubstrateDatasource>;
-export type CustomDatasourceTemplate = BaseTemplateDataSource<SubstrateCustomDatasource>;
+export type RuntimeDatasourceTemplate = BaseTemplateDataSource<CardanoDatasource>;
+export type CustomDatasourceTemplate = BaseTemplateDataSource<CardanoCustomDatasource>;
 
-export type SubstrateProjectManifestV1_0_0 = ProjectManifestV1_0_0<
-  SubstrateRuntimeDatasource | SubstrateCustomDatasource
+export type CardanoProjectManifestV1_0_0 = ProjectManifestV1_0_0<
+  CardanoRuntimeDatasource | CardanoCustomDatasource
 >;
 
 /**
- * Kind of Substrate datasource.
+ * Kind of Cardano datasource.
  * @enum {string}
  */
-export enum SubstrateDatasourceKind {
+export enum CardanoDatasourceKind {
   /**
-   * The runtime kind of Substrate datasource.
+   * The runtime kind of Cardano datasource.
    */
-  Runtime = 'substrate/Runtime',
+  Runtime = 'cardano/Runtime',
 }
 
 /**
- * Enum representing the kind of Substrate handler.
+ * Enum representing the kind of Cardano handler.
  * @enum {string}
  */
-export enum SubstrateHandlerKind {
+export enum CardanoHandlerKind {
   /**
-   * Handler for Substrate blocks.
+   * Handler for Cardano blocks.
    */
-  Block = 'substrate/BlockHandler',
+  Block = 'cardano/BlockHandler',
   /**
-   * Handler for Substrate blocks.
+   * Handler for Cardano extrinsic calls.
    */
-  CardanoBlock = 'cardano/BlockHandler',
-
-  /**
-   * Handler for Substrate extrinsic calls.
-   */
-  Call = 'substrate/CallHandler',
-
-  /**
-   * Handler for Substrate events.
-   */
-  Event = 'substrate/EventHandler',
+  Call = 'cardano/CallHandler',
 }
 
 export type RuntimeHandlerInputMap<T extends AnyTuple = AnyTuple> = {
-  [SubstrateHandlerKind.Block]: SubstrateBlock;
-  [SubstrateHandlerKind.CardanoBlock]: string;
-  [SubstrateHandlerKind.Event]: SubstrateEvent<T> | LightSubstrateEvent<T>;
-  [SubstrateHandlerKind.Call]: SubstrateExtrinsic<T>;
+  // [CardanoHandlerKind.Block]: CardanoBlock;
+  [CardanoHandlerKind.Block]: string;
+  // [CardanoHandlerKind.CardanoBlock]: string;
+  // [CardanoHandlerKind.Event]: CardanoEvent<T> | LightCardanoEvent<T>;
+  [CardanoHandlerKind.Call]: CardanoExtrinsic<T>;
 };
 
 type RuntimeFilterMap = {
-  [SubstrateHandlerKind.Block]: SubstrateBlockFilter;
-  [SubstrateHandlerKind.CardanoBlock]: SubstrateBlockFilter;
-  [SubstrateHandlerKind.Event]: SubstrateEventFilter;
-  [SubstrateHandlerKind.Call]: SubstrateCallFilter;
+  [CardanoHandlerKind.Block]: CardanoBlockFilter;
+  // [CardanoHandlerKind.CardanoBlock]: CardanoBlockFilter;
+  // [CardanoHandlerKind.Event]: CardanoEventFilter;
+  [CardanoHandlerKind.Call]: CardanoCallFilter;
 };
 
 // [startSpecVersion?, endSpecVersion?] closed range
 export type SpecVersionRange = [number, number];
 
-interface SubstrateBaseHandlerFilter {
+interface CardanoBaseHandlerFilter {
   specVersion?: SpecVersionRange;
 }
 
 /**
- * Represents a filter for Substrate blocks, extending SubstrateBaseHandlerFilter.
+ * Represents a filter for Cardano blocks, extending CardanoBaseHandlerFilter.
  * @interface
- * @extends {SubstrateBaseHandlerFilter}
+ * @extends {CardanoBaseHandlerFilter}
  */
-export interface SubstrateBlockFilter extends SubstrateBaseHandlerFilter, BlockFilter {}
+export interface CardanoBlockFilter extends CardanoBaseHandlerFilter, BlockFilter {}
 
 /**
- * Represents a filter for Substrate events, extending SubstrateBaseHandlerFilter.
+ * Represents a filter for Cardano events, extending CardanoBaseHandlerFilter.
  * @interface
- * @extends {SubstrateBaseHandlerFilter}
+ * @extends {CardanoBaseHandlerFilter}
  */
-export interface SubstrateEventFilter extends SubstrateBaseHandlerFilter {
+export interface CardanoEventFilter extends CardanoBaseHandlerFilter {
   /**
    * The module name for filtering events or calls (optional).
    * @type {string}
@@ -118,9 +109,9 @@ export interface SubstrateEventFilter extends SubstrateBaseHandlerFilter {
 }
 
 /**
- * Represents a filter for Substrate calls, extending SubstrateEventFilter.
+ * Represents a filter for Cardano calls, extending CardanoEventFilter.
  * @interface
- * @extends {SubstrateEventFilter}
+ * @extends {CardanoEventFilter}
  * @example
  * filter: {
  * module: 'balances',
@@ -128,7 +119,7 @@ export interface SubstrateEventFilter extends SubstrateBaseHandlerFilter {
  * success: true,
  * }
  */
-export interface SubstrateCallFilter extends SubstrateEventFilter {
+export interface CardanoCallFilter extends CardanoEventFilter {
   /**
    * Indicates whether the call was successful (optional).
    * @type {boolean}
@@ -142,46 +133,46 @@ export interface SubstrateCallFilter extends SubstrateEventFilter {
   isSigned?: boolean;
 }
 
-/**
- * Represents a handler for Substrate blocks.
- * @type {SubstrateCustomHandler<SubstrateHandlerKind.Block, SubstrateBlockFilter>}
- */
-export type SubstrateBlockHandler = SubstrateCustomHandler<SubstrateHandlerKind.Block, SubstrateBlockFilter>;
+// /**
+//  * Represents a handler for Substrate blocks.
+//  * @type {SubstrateCustomHandler<SubstrateHandlerKind.Block, SubstrateBlockFilter>}
+//  */
+// export type SubstrateBlockHandler = SubstrateCustomHandler<SubstrateHandlerKind.Block, SubstrateBlockFilter>;
 
 /**
  * Represents a handler for Cardano blocks.
- * @type {SubstrateCustomHandler<SubstrateHandlerKind.Block, SubstrateBlockFilter>}
+ * @type {CardanoCustomHandler<CardanoCustomHandler.Block, SubstrateBlockFilter>}
  */
-export type CardanoBlockHandler = SubstrateCustomHandler<SubstrateHandlerKind.CardanoBlock, SubstrateBlockFilter>;
+export type CardanoBlockHandler = CardanoCustomHandler<CardanoHandlerKind.Block, CardanoBlockFilter>;
 
 /**
- * Represents a handler for Substrate calls.
- * @type {SubstrateCustomHandler<SubstrateHandlerKind.Call, SubstrateCallFilter>}
+ * Represents a handler for Cardano calls.
+ * @type {CardanoCustomHandler<CardanoHandlerKind.Call, CardanoCallFilter>}
  */
-export type SubstrateCallHandler = SubstrateCustomHandler<SubstrateHandlerKind.Call, SubstrateCallFilter>;
+export type CardanoCallHandler = CardanoCustomHandler<CardanoHandlerKind.Call, CardanoCallFilter>;
+
+// /**
+//  * Represents a handler for Cardano events.
+//  * @type {CardanoCustomHandler<CardanoHandlerKind.Event, CardanoEventFilter>}
+//  */
+// export type CardanoEventHandler = CardanoCustomHandler<CardanoHandlerKind.Event, CardanoEventFilter>;
 
 /**
- * Represents a handler for Substrate events.
- * @type {SubstrateCustomHandler<SubstrateHandlerKind.Event, SubstrateEventFilter>}
- */
-export type SubstrateEventHandler = SubstrateCustomHandler<SubstrateHandlerKind.Event, SubstrateEventFilter>;
-
-/**
- * Represents a generic custom handler for Substrate.
+ * Represents a generic custom handler for Cardano.
  * @interface
  * @template K - The kind of the handler (default: string).
  * @template F - The filter type for the handler (default: Record<string, unknown>).
  */
-export interface SubstrateCustomHandler<K extends string = string, F = Record<string, unknown>>
+export interface CardanoCustomHandler<K extends string = string, F = Record<string, unknown>>
   extends BaseHandler<F, K> {
   /**
-   * The kind of handler. For `substrate/Runtime` datasources this is either `Block`, `Call` or `Event` kinds.
+   * The kind of handler. For `Cardano/Runtime` datasources this is either `Block`, `Call` or `Event` kinds.
    * The value of this will determine the filter options as well as the data provided to your handler function
-   * @type {SubstrateHandlerKind.Block | SubstrateHandlerKind.Call | SubstrateHandlerKind.Event | string }
+   * @type {CardanoHandlerKind.Block | CardanoHandlerKind.Call | string }
    * @example
-   * kind: SubstrateHandlerKind.Block // Defined with an enum, this is used for runtime datasources
+   * kind: CardanoHandlerKind.Block // Defined with an enum, this is used for runtime datasources
    * @example
-   * kind: 'substrate/FrontierEvmEvent' // Defined with a string, this is used with custom datasources
+   * kind: 'Cardano/FrontierEvmEvent' // Defined with a string, this is used with custom datasources
    */
   kind: K;
   /**
@@ -197,38 +188,36 @@ export interface SubstrateCustomHandler<K extends string = string, F = Record<st
 }
 
 /**
- * Represents a runtime handler for Substrate, which can be a block handler, call handler, or event handler.
- * @type {SubstrateBlockHandler | SubstrateCallHandler | SubstrateEventHandler}
+ * Represents a runtime handler for Cardano, which can be a block handler, call handler, or event handler.
+ * @type {CardanoBlockHandler | CardanoCallHandler}
  */
-export type SubstrateRuntimeHandler =
-  | SubstrateBlockHandler
-  | SubstrateCallHandler
-  | SubstrateEventHandler
-  | CardanoBlockHandler;
+export type CardanoRuntimeHandler =
+  | CardanoBlockHandler
+  | CardanoCallHandler;
 
 /**
- * Represents a handler for Substrate, which can be a runtime handler or a custom handler with unknown filter type.
- * @type {SubstrateRuntimeHandler | SubstrateCustomHandler<string, unknown>}
+ * Represents a handler for Cardano, which can be a runtime handler or a custom handler with unknown filter type.
+ * @type {CardanoRuntimeHandler | CardanoCustomHandler<string, unknown>}
  */
-export type SubstrateHandler = SubstrateRuntimeHandler | SubstrateCustomHandler<string, unknown>;
+export type CardanoHandler = CardanoRuntimeHandler | CardanoCustomHandler<string, unknown>;
 
 /**
- * Represents a filter for Substrate runtime handlers, which can be a block filter, call filter, or event filter.
- * @type {SubstrateBlockFilter | SubstrateCallFilter | SubstrateEventFilter}
+ * Represents a filter for Cardano runtime handlers, which can be a block filter, call filter, or event filter.
+ * @type {CardanoBlockFilter | CardanoCallFilter}
  */
-export type SubstrateRuntimeHandlerFilter = SubstrateBlockFilter | SubstrateCallFilter | SubstrateEventFilter;
+export type CardanoRuntimeHandlerFilter = CardanoBlockFilter | CardanoCallFilter;
 
 /**
- * Represents a mapping for Substrate handlers, extending FileReference.
+ * Represents a mapping for Cardano handlers, extending FileReference.
  * @interface
  * @extends {FileReference}
  */
-export interface SubstrateMapping<T extends SubstrateHandler = SubstrateHandler> extends BaseMapping<T> {
+export interface CardanoMapping<T extends CardanoHandler = CardanoHandler> extends BaseMapping<T> {
   /**
    * @type {T[]}
    * @example
    * handlers: [{
-        kind: SubstrateHandlerKind.Call,
+        kind: CardanoHandlerKind.Call,
         handler: 'handleCall',
         filter: {
           module: 'balances',
@@ -241,52 +230,52 @@ export interface SubstrateMapping<T extends SubstrateHandler = SubstrateHandler>
 }
 
 /**
- * Represents a Substrate datasource interface with generic parameters.
+ * Represents a Cardano datasource interface with generic parameters.
  * @interface
  * @template M - The mapping type for the datasource.
  */
-type ISubstrateDatasource<M extends SubstrateMapping> = BaseDataSource<SubstrateHandler, M>;
+type ICardanoDatasource<M extends CardanoMapping> = BaseDataSource<CardanoHandler, M>;
 
 /**
- * Represents a runtime datasource for Substrate.
+ * Represents a runtime datasource for Cardano.
  * @interface
- * @template M - The mapping type for the datasource (default: SubstrateMapping<SubstrateRuntimeHandler>).
+ * @template M - The mapping type for the datasource (default: CardanoMapping<CardanoRuntimeHandler>).
  */
-export interface SubstrateRuntimeDatasource<
-  M extends SubstrateMapping<SubstrateRuntimeHandler> = SubstrateMapping<SubstrateRuntimeHandler>,
-> extends ISubstrateDatasource<M> {
+export interface CardanoRuntimeDatasource<
+  M extends CardanoMapping<CardanoRuntimeHandler> = CardanoMapping<CardanoRuntimeHandler>,
+> extends ICardanoDatasource<M> {
   /**
-   * The kind of the datasource, which is `substrate/Runtime`.
-   * @type {SubstrateDatasourceKind.Runtime}
+   * The kind of the datasource, which is `Cardano/Runtime`.
+   * @type {CardanoDatasourceKind.Runtime}
    */
-  kind: SubstrateDatasourceKind.Runtime;
+  kind: CardanoDatasourceKind.Runtime;
 }
 
 /**
- * Represents a Substrate datasource, which can be either runtime or custom.
- * @type {SubstrateDatasource}
+ * Represents a Cardano datasource, which can be either runtime or custom.
+ * @type {CardanoDatasource}
  */
-export type SubstrateDatasource = SubstrateRuntimeDatasource | SubstrateCustomDatasource;
+export type CardanoDatasource = CardanoRuntimeDatasource | CardanoCustomDatasource;
 
 /**
- * Represents a custom datasource for Substrate.
+ * Represents a custom datasource for Cardano.
  * @interface
  * @template K - The kind of the datasource (default: string).
- * @template M - The mapping type for the datasource (default: SubstrateMapping<SubstrateCustomHandler>).
+ * @template M - The mapping type for the datasource (default: CardanoMapping<CardanoCustomHandler>).
  * @template O - The processor options (default: any).
  */
-export interface SubstrateCustomDatasource<
+export interface CardanoCustomDatasource<
   K extends string = string,
-  M extends SubstrateMapping = SubstrateMapping<SubstrateCustomHandler>,
+  M extends CardanoMapping = CardanoMapping<CardanoCustomHandler>,
   O = any,
-> extends BaseCustomDataSource<SubstrateHandler, M> {
+> extends BaseCustomDataSource<CardanoHandler, M> {
   startSlot?: number;
   startBlockHash?: string;
   /**
-   * The kind of the custom datasource. This should follow the pattern `substrate/*`.
+   * The kind of the custom datasource. This should follow the pattern `Cardano/*`.
    * @type {K}
    * @example
-   * kind: 'substrate/FrontierEvm'
+   * kind: 'Cardano/FrontierEvm'
    */
   kind: K;
 
@@ -309,9 +298,9 @@ export interface SubstrateCustomDatasource<
 export type HandlerInputTransformer_0_0_0<
   IT extends AnyTuple,
   IM extends RuntimeHandlerInputMap<IT>,
-  T extends SubstrateHandlerKind,
+  T extends CardanoHandlerKind,
   E,
-  DS extends SubstrateCustomDatasource = SubstrateCustomDatasource,
+  DS extends CardanoCustomDatasource = CardanoCustomDatasource,
 > = BaseHandlerInputTransformer_0_0_0<IM, T, DS, ApiPromise, E>;
 
 /**
@@ -320,29 +309,28 @@ export type HandlerInputTransformer_0_0_0<
 export type HandlerInputTransformer_1_0_0<
   IT extends AnyTuple,
   IM extends RuntimeHandlerInputMap<IT>,
-  T extends SubstrateHandlerKind,
+  T extends CardanoHandlerKind,
   F extends Record<string, unknown>,
   E,
-  DS extends SubstrateCustomDatasource = SubstrateCustomDatasource,
+  DS extends CardanoCustomDatasource = CardanoCustomDatasource,
 > = BaseHandlerInputTransformer_1_0_0<IM, T, DS, ApiPromise, F, E>;
 
 export type SecondLayerHandlerProcessorArray<
   K extends string,
   F extends Record<string, unknown>,
   T,
-  DS extends SubstrateCustomDatasource<K> = SubstrateCustomDatasource<K>,
+  DS extends CardanoCustomDatasource<K> = CardanoCustomDatasource<K>,
 > =
-  | SecondLayerHandlerProcessor<SubstrateHandlerKind.Block, F, T, DS>
-  | SecondLayerHandlerProcessor<SubstrateHandlerKind.Call, F, T, DS>
-  | SecondLayerHandlerProcessor<SubstrateHandlerKind.Event, F, T, DS>;
+  | SecondLayerHandlerProcessor<CardanoHandlerKind.Block, F, T, DS>
+  | SecondLayerHandlerProcessor<CardanoHandlerKind.Call, F, T, DS>;
 
 /**
  * @deprecated use types core version. datasource processors need updating before this can be removed
  * */
-export type SubstrateDatasourceProcessor<
+export type CardanoDatasourceProcessor<
   K extends string,
   F extends Record<string, unknown>,
-  DS extends SubstrateCustomDatasource<K> = SubstrateCustomDatasource<K>,
+  DS extends CardanoCustomDatasource<K> = CardanoCustomDatasource<K>,
   P extends Record<string, SecondLayerHandlerProcessorArray<K, F, any, DS>> = Record<
     string,
     SecondLayerHandlerProcessorArray<K, F, any, DS>
@@ -350,19 +338,19 @@ export type SubstrateDatasourceProcessor<
 > = DsProcessor<DS, P, ApiPromise>;
 
 export type SecondLayerHandlerProcessor<
-  K extends SubstrateHandlerKind,
+  K extends CardanoHandlerKind,
   F extends Record<string, unknown>,
   E,
-  DS extends SubstrateCustomDatasource = SubstrateCustomDatasource,
+  DS extends CardanoCustomDatasource = CardanoCustomDatasource,
 > =
   | SecondLayerHandlerProcessor_0_0_0<RuntimeFilterMap, K, F, E, DS, ApiPromise>
   | SecondLayerHandlerProcessor_1_0_0<RuntimeFilterMap, K, F, E, DS, ApiPromise>;
 
 /**
- * Represents a Substrate subquery network configuration, which is based on the CommonSubqueryNetworkConfig template.
+ * Represents a Cardano subquery network configuration, which is based on the CommonSubqueryNetworkConfig template.
  * @type {IProjectNetworkConfig}
  */
-export type SubstrateNetworkConfig = IProjectNetworkConfig & {
+export type CardanoNetworkConfig = IProjectNetworkConfig & {
   /**
    * The chain types associated with the network (optional).
    * @type {FileReference}
@@ -371,11 +359,11 @@ export type SubstrateNetworkConfig = IProjectNetworkConfig & {
 };
 
 /**
- * Represents a Substrate project configuration based on the CommonSubqueryProject template.
- * @type {CommonSubqueryProject<SubstrateNetworkConfig, SubstrateDatasource, RuntimeDatasourceTemplate | CustomDatasourceTemplate>}
+ * Represents a Cardano project configuration based on the CommonSubqueryProject template.
+ * @type {CommonSubqueryProject<CardanoNetworkConfig, CardanoDatasource, RuntimeDatasourceTemplate | CustomDatasourceTemplate>}
  */
-export type SubstrateProject<DS extends SubstrateDatasource = SubstrateRuntimeDatasource> = CommonSubqueryProject<
-  SubstrateNetworkConfig,
-  SubstrateRuntimeDatasource | DS,
-  BaseTemplateDataSource<SubstrateRuntimeDatasource> | BaseTemplateDataSource<DS>
+export type CardanoProject<DS extends CardanoDatasource = CardanoRuntimeDatasource> = CommonSubqueryProject<
+  CardanoNetworkConfig,
+  CardanoRuntimeDatasource | DS,
+  BaseTemplateDataSource<CardanoRuntimeDatasource> | BaseTemplateDataSource<DS>
 >;

@@ -2,7 +2,6 @@ import { Header, IBlock } from '@subql/node-core';
 import {
   BlockContent,
   CardanoBlockContent,
-  CardanoEvent,
 } from '../indexer/types';
 import { CardanoClient } from '../indexer/cardano/CardanoClient';
 import { redis as redisClient, getChainTipByHeight } from './cache';
@@ -16,6 +15,7 @@ import {
 import { MultiEraBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { Block } from '@dcspark/cardano-multiplatform-lib-nodejs';
 import { toHex } from '../indexer/utils/hex';
+import { CardanoBlock, CardanoBlockFilter, CardanoCallFilter, CardanoExtrinsic } from '@subql/types';
 
 export async function fetchBlocksBatches(
   api: CardanoClient,
@@ -125,6 +125,49 @@ export async function fetchBlocksRange(
   return result;
 }
 
+export function filterBlock(
+  block: CardanoBlock,
+  filter?: CardanoBlockFilter,
+): CardanoBlock | undefined {
+  // TODO: Filter block cardano
+  return block;
+  // if (!filter) return block;
+  // if (!filterBlockModulo(block, filter)) return;
+  // if (
+  //   !filterBlockTimestamp(
+  //     block.timestamp.getTime(),
+  //     filter as SubqlProjectBlockFilter,
+  //   )
+  // ) {
+  //   return;
+  // }
+  // return filter.specVersion === undefined ||
+  //   block.specVersion === undefined ||
+  //   checkSpecRange(filter.specVersion, block.specVersion)
+  //   ? block
+  //   : undefined;
+}
+
+export function filterExtrinsic(
+  { block, extrinsic, success }: CardanoExtrinsic,
+  filter?: CardanoCallFilter,
+): boolean {
+  // TODO: for cardano
+  return true
+  // if (!filter) return true;
+  // return (
+  //   (filter.specVersion === undefined ||
+  //     block.specVersion === undefined ||
+  //     checkSpecRange(filter.specVersion, block.specVersion)) &&
+  //   (filter.module === undefined ||
+  //     extrinsic.method.section === filter.module) &&
+  //   (filter.method === undefined ||
+  //     extrinsic.method.method === filter.method) &&
+  //   (filter.success === undefined || success === filter.success) &&
+  //   (filter.isSigned === undefined || extrinsic.isSigned === filter.isSigned)
+  // );
+}
+
 /**
  *
  * @param api
@@ -166,3 +209,4 @@ export class LazyBlockContent implements CardanoBlockContent {
     return [];
   }
 }
+

@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0
 
-import { SubstrateDataSource } from '@subql/common-substrate';
+import { CardanoDataSource } from 'packages/common-cardano/src';
 import {
   NodeConfig,
   DictionaryV2,
@@ -11,16 +11,16 @@ import {
   RawDictionaryResponseData,
   IBlock,
 } from '@subql/node-core';
-import { SubstrateBlock, SubstrateDatasource } from '@subql/types';
+import { CardanoBlock, CardanoDatasource } from '@subql/types';
 import { SubqueryProject } from '../../../configure/SubqueryProject';
-import { SubstrateDictionaryV2QueryEntry } from './types';
+import { CardanoDictionaryV2QueryEntry } from './types';
 
 const MIN_FETCH_LIMIT = 200;
 
 export function buildDictionaryV2QueryEntry(
-  dataSources: SubstrateDataSource[],
-): SubstrateDictionaryV2QueryEntry {
-  const dictionaryConditions: SubstrateDictionaryV2QueryEntry = {
+  dataSources: CardanoDataSource[],
+): CardanoDictionaryV2QueryEntry {
+  const dictionaryConditions: CardanoDictionaryV2QueryEntry = {
     logs: [],
     transactions: [],
   };
@@ -28,13 +28,13 @@ export function buildDictionaryV2QueryEntry(
   return dictionaryConditions;
 }
 
-export class SubstrateDictionaryV2 extends DictionaryV2<
-  SubstrateBlock,
-  SubstrateDatasource,
-  SubstrateDictionaryV2QueryEntry
+export class CardanoDictionaryV2 extends DictionaryV2<
+  CardanoBlock,
+  CardanoDatasource,
+  CardanoDictionaryV2QueryEntry
 > {
   protected buildDictionaryQueryEntries(
-    dataSources: SubstrateDataSource[],
+    dataSources: CardanoDataSource[],
   ): DictionaryV2QueryEntry {
     return buildDictionaryV2QueryEntry(dataSources);
   }
@@ -53,8 +53,8 @@ export class SubstrateDictionaryV2 extends DictionaryV2<
     nodeConfig: NodeConfig,
     project: SubqueryProject,
     chainId?: string,
-  ): Promise<SubstrateDictionaryV2> {
-    const dictionary = new SubstrateDictionaryV2(
+  ): Promise<CardanoDictionaryV2> {
+    const dictionary = new CardanoDictionaryV2(
       endpoint,
       nodeConfig,
       project,
@@ -76,14 +76,14 @@ export class SubstrateDictionaryV2 extends DictionaryV2<
     startBlock: number,
     queryEndBlock: number,
     limit = MIN_FETCH_LIMIT,
-  ): Promise<DictionaryResponse<IBlock<SubstrateBlock> | number> | undefined> {
+  ): Promise<DictionaryResponse<IBlock<CardanoBlock> | number> | undefined> {
     return this.getData(startBlock, queryEndBlock, limit);
   }
 
-  // TODO, complete this once substrate support v2
+  // TODO, complete this once cardano support v2
   convertResponseBlocks(
     result: RawDictionaryResponseData<any>,
-  ): DictionaryResponse<IBlock<SubstrateBlock>> | undefined {
+  ): DictionaryResponse<IBlock<CardanoBlock>> | undefined {
     return undefined;
   }
 }

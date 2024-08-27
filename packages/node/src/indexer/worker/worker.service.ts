@@ -10,7 +10,7 @@ import {
   IProjectUpgradeService,
   IBlock,
 } from '@subql/node-core';
-import { SubstrateDatasource } from '@subql/types';
+import { CardanoDatasource } from '@subql/types';
 import { ApiService } from '../api.service';
 import { SpecVersion } from '../dictionary';
 import { IndexerManager } from '../indexer.manager';
@@ -28,7 +28,7 @@ export type FetchBlockResponse = { specVersion?: number; parentHash: string };
 export class WorkerService extends BaseWorkerService<
   CardanoBlockContent | LightBlockContent,
   FetchBlockResponse,
-  SubstrateDatasource,
+  CardanoDatasource,
   { specVersion: number }
 > {
   constructor(
@@ -36,7 +36,7 @@ export class WorkerService extends BaseWorkerService<
     private indexerManager: IndexerManager,
     private workerRuntimeService: WorkerRuntimeService,
     @Inject('IProjectService')
-    projectService: IProjectService<SubstrateDatasource>,
+    projectService: IProjectService<CardanoDatasource>,
     @Inject('IProjectUpgradeService')
     projectUpgradeService: IProjectUpgradeService,
     nodeConfig: NodeConfig,
@@ -77,7 +77,7 @@ export class WorkerService extends BaseWorkerService<
 
   protected async processFetchedBlock(
     block: IBlock<CardanoBlockContent | LightBlockContent>,
-    dataSources: SubstrateDatasource[],
+    dataSources: CardanoDatasource[],
   ): Promise<ProcessBlockResponse> {
     const runtimeVersion = !isFullBlock(block.block)
       ? undefined

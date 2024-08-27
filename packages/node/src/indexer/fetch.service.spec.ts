@@ -2,13 +2,12 @@
 // // SPDX-License-Identifier: GPL-3.0
 
 import {
-  SubstrateBlockHandler,
-  SubstrateCallHandler,
-  SubstrateDatasource,
-  SubstrateDatasourceKind,
-  SubstrateEventHandler,
-  SubstrateHandlerKind,
-  SubstrateRuntimeHandler,
+  CardanoBlockHandler,
+  CardanoCallHandler,
+  CardanoDatasource,
+  CardanoDatasourceKind,
+  CardanoHandlerKind,
+  CardanoRuntimeHandler,
 } from '@subql/types';
 // import { DictionaryQueryEntry } from '@subql/types-core';
 // import { FetchService } from './fetch.service';
@@ -24,25 +23,25 @@ import {
 //   },
 // } as any;
 
-// const blockHandler: SubstrateBlockHandler = {
-//   kind: SubstrateHandlerKind.Block,
+// const blockHandler: CardanoBlockHandler = {
+//   kind: CardanoHandlerKind.Block,
 //   handler: 'handleBlock',
 // };
-// const callHandler: SubstrateCallHandler = {
-//   kind: SubstrateHandlerKind.Call,
+// const callHandler: CardanoCallHandler = {
+//   kind: CardanoHandlerKind.Call,
 //   handler: 'handleCall',
 //   filter: { method: 'call', module: 'module' },
 // };
-// const eventHandler: SubstrateEventHandler = {
-//   kind: SubstrateHandlerKind.Event,
+// const eventHandler: CardanoEventHandler = {
+//   kind: CardanoHandlerKind.Event,
 //   handler: 'handleEvent',
 //   filter: { method: 'event', module: 'module' },
 // };
 
-// const makeDs = (handlers: SubstrateRuntimeHandler[]) => {
+// const makeDs = (handlers: CardanoRuntimeHandler[]) => {
 //   return {
 //     name: '',
-//     kind: SubstrateDatasourceKind.Runtime,
+//     kind: CardanoDatasourceKind.Runtime,
 //     mapping: {
 //       file: '',
 //       handlers,
@@ -53,7 +52,7 @@ import {
 // describe('FetchSevice', () => {
 //   let fetchService: FetchService & {
 //     buildDictionaryQueryEntries: (
-//       ds: SubstrateDatasource[],
+//       ds: CardanoDatasource[],
 //     ) => DictionaryQueryEntry[]; // This is protected so we expose it here
 //     getModulos: () => number[];
 //   };

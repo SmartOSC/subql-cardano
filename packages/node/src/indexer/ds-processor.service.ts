@@ -2,21 +2,21 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import { Injectable } from '@nestjs/common';
-import { isCustomDs } from '@subql/common-substrate';
+import { isCustomDs } from '@subql/common-cardano';
 import { BaseDsProcessorService } from '@subql/node-core';
 import {
-  SubstrateCustomDatasource,
-  SubstrateCustomHandler,
-  SubstrateDatasource,
-  SubstrateDatasourceProcessor,
-  SubstrateMapping,
+  CardanoCustomDatasource,
+  CardanoCustomHandler,
+  CardanoDatasource,
+  CardanoDatasourceProcessor,
+  CardanoMapping,
 } from '@subql/types';
 
 @Injectable()
 export class DsProcessorService extends BaseDsProcessorService<
-  SubstrateDatasource,
-  SubstrateCustomDatasource<string, SubstrateMapping<SubstrateCustomHandler>>,
-  SubstrateDatasourceProcessor<string, Record<string, unknown>>
+  CardanoDatasource,
+  CardanoCustomDatasource<string, CardanoMapping<CardanoCustomHandler>>,
+  CardanoDatasourceProcessor<string, Record<string, unknown>>
 > {
   protected isCustomDs = isCustomDs;
 }

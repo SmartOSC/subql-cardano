@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import { IBlockDispatcher } from '@subql/node-core';
-import { SubstrateBlock } from '@subql/types';
+import { CardanoBlock } from '@subql/types';
 import { RuntimeService } from '../runtime/runtimeService';
 
-export interface ISubstrateBlockDispatcher
-  extends IBlockDispatcher<SubstrateBlock> {
+export interface ICardanoBlockDispatcher
+  extends IBlockDispatcher<CardanoBlock> {
   init(
     onDynamicDsCreated: (height: number) => void,
     runtimeService?: RuntimeService,

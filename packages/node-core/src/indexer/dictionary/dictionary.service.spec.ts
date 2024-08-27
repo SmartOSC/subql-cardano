@@ -101,7 +101,7 @@ describe('Dictionary service', function () {
     expect(dictUrl.length).toBeGreaterThan(0);
 
     const dictUrl2: string[] = await (dictionaryService as any).resolveDictionary(
-      NETWORK_FAMILY.substrate,
+      NETWORK_FAMILY.cardano,
       '0x91b171bb158e2d3848fa23a9f1c25182fb8e20313b2c1eb49219da7a70ce90c3',
       'https://github.com/subquery/templates/raw/main/dist/dictionary.json'
     );

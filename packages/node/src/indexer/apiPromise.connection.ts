@@ -16,10 +16,13 @@ import {
   IApiConnectionSpecific,
   IBlock,
 } from '@subql/node-core';
-import * as SubstrateUtil from '../utils/substrate';
-import { ApiAt, BlockContent, LightBlockContent } from './types';
+import * as CardanoUtil from '../utils/cardano';
+import { ApiAt, BlockContent, CardanoBlockContent, LightBlockContent } from './types';
 import { createCachedProvider } from './x-provider/cachedProvider';
 import { HttpProvider } from './x-provider/http';
+import { CardanoSafeClient } from './cardano/cardanoClient.connection';
+import { CardanoClient } from './cardano/CardanoClient';
+import { MiniProtocolClient } from './cardano/miniProtocolClient';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { version: packageVersion } = require('../../package.json');
@@ -27,8 +30,7 @@ const { version: packageVersion } = require('../../package.json');
 const RETRY_DELAY = 2_500;
 
 export type FetchFunc =
-  | typeof SubstrateUtil.fetchBlocksBatches
-  | typeof SubstrateUtil.fetchBlocksBatchesLight;
+  typeof CardanoUtil.fetchBlocksBatches
 
 // We use a function to get the fetch function because it can change depending on the skipTransactions feature
 export type GetFetchFunc = () => FetchFunc;
@@ -36,21 +38,21 @@ export type GetFetchFunc = () => FetchFunc;
 export class ApiPromiseConnection
   implements
     IApiConnectionSpecific<
-      ApiPromise,
-      ApiAt,
-      IBlock<BlockContent>[] | IBlock<LightBlockContent>[]
+    CardanoClient,
+    CardanoSafeClient,
+      IBlock<CardanoBlockContent>[]
     >
 {
   readonly networkMeta: NetworkMetadataPayload;
 
   private constructor(
-    public unsafeApi: ApiPromise,
+    public unsafeApi: CardanoClient,
     private fetchBlocksBatches: GetFetchFunc,
   ) {
     this.networkMeta = {
-      chain: unsafeApi.runtimeChain.toString(),
-      specName: unsafeApi.runtimeVersion.specName.toString(),
-      genesisHash: unsafeApi.genesisHash.toString(),
+      chain: "cardano",
+      specName: "",
+      genesisHash: "",
     };
   }
 
@@ -83,44 +85,49 @@ export class ApiPromiseConnection
       noInitWarn: true,
       ...args.chainTypes,
     };
-    const api = await ApiPromise.create(apiOption);
+
+    provider.disconnect()
+
+    // TODO: Load endpoint from datasource
+    const miniClient = new MiniProtocolClient(endpoint)
+    const api = new CardanoClient(miniClient);
     return new ApiPromiseConnection(api, fetchBlocksBatches);
   }
 
-  safeApi(height: number): ApiAt {
+  safeApi(height: number): CardanoSafeClient {
     throw new Error(`Not Implemented`);
   }
 
   async fetchBlocks(
     heights: number[],
     overallSpecVer?: number,
-  ): Promise<IBlock<BlockContent>[] | IBlock<LightBlockContent>[]> {
+  ): Promise<IBlock<CardanoBlockContent>[]> {
     const blocks = await this.fetchBlocksBatches()(
       this.unsafeApi,
       heights,
-      overallSpecVer,
     );
     return blocks;
   }
 
   async apiConnect(): Promise<void> {
     return new Promise<void>((resolve) => {
-      if (this.unsafeApi.isConnected) {
-        resolve();
-      }
+      resolve();
+      // if (this.unsafeApi.isConnected) {
+      //   resolve();
+      // }
 
-      this.unsafeApi.on('connected', () => {
-        resolve();
-      });
+      // this.unsafeApi.on('connected', () => {
+      //   resolve();
+      // });
 
-      if (!this.unsafeApi.isConnected) {
-        this.unsafeApi.connect();
-      }
+      // if (!this.unsafeApi.isConnected) {
+      //   this.unsafeApi.connect();
+      // }
     });
   }
 
   async apiDisconnect(): Promise<void> {
-    await this.unsafeApi.disconnect();
+    // await this.unsafeApi.disconnect();
   }
 
   handleError = ApiPromiseConnection.handleError;

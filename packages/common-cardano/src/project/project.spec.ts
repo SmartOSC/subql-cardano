@@ -10,57 +10,57 @@ import {
   toJsonObject,
 } from '@subql/common';
 import {validateSync} from 'class-validator';
-import {DeploymentV1_0_0, SubstrateRunnerNodeImpl, SubstrateRunnerSpecsImpl} from '../project/versioned/v1_0_0';
-import {SubstrateProjectManifestVersioned, VersionedProjectManifest} from './versioned';
+import {DeploymentV1_0_0, CardanoRunnerNodeImpl, CardanoRunnerSpecsImpl} from '../project/versioned/v1_0_0';
+import {CardanoProjectManifestVersioned, VersionedProjectManifest} from './versioned';
 
 const projectsDir = path.join(__dirname, '../../test');
 
-function loadSubstrateProjectManifest(file: string): SubstrateProjectManifestVersioned {
+function loadCardanoProjectManifest(file: string): CardanoProjectManifestVersioned {
   const doc = loadFromJsonOrYaml(getManifestPath(file));
-  const projectManifest = new SubstrateProjectManifestVersioned(doc as VersionedProjectManifest);
+  const projectManifest = new CardanoProjectManifestVersioned(doc as VersionedProjectManifest);
   projectManifest.validate();
   return projectManifest;
 }
 
 describe('project.yaml', () => {
   it('can validate project.yaml', () => {
-    expect(() => loadSubstrateProjectManifest(path.join(projectsDir, 'project_falsy.yaml'))).toThrow();
-    expect(() => loadSubstrateProjectManifest(path.join(projectsDir, 'project_falsy_array.yaml'))).toThrow();
+    expect(() => loadCardanoProjectManifest(path.join(projectsDir, 'project_falsy.yaml'))).toThrow();
+    expect(() => loadCardanoProjectManifest(path.join(projectsDir, 'project_falsy_array.yaml'))).toThrow();
   });
 
   it('can fail validation if version not supported', () => {
-    expect(() => loadSubstrateProjectManifest(path.join(projectsDir, 'project_invalid_version.yaml'))).toThrow();
+    expect(() => loadCardanoProjectManifest(path.join(projectsDir, 'project_invalid_version.yaml'))).toThrow();
   });
   it('can validate a v1.0.0 project.yaml with a custom data source', () => {
-    expect(() => loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0_custom_ds.yaml'))).not.toThrow();
+    expect(() => loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0_custom_ds.yaml'))).not.toThrow();
   });
   it('can validate a v1.0.0 project.yaml with templates', () => {
-    expect(() => loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0.yaml'))).not.toThrow();
+    expect(() => loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0.yaml'))).not.toThrow();
   });
 
   it('can convert genesis hash in v1.0.0 to chainId in deployment', () => {
-    const deployment = loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0.yaml')).asV1_0_0.deployment;
+    const deployment = loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0.yaml')).asV1_0_0.deployment;
     expect(deployment.network.chainId).not.toBeNull();
   });
 
   it('can get chainId for deployment', () => {
-    const deployment = loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0_chainId.yaml')).asV1_0_0
+    const deployment = loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0_chainId.yaml')).asV1_0_0
       .deployment;
     expect(deployment.network.chainId).toBe('moonbeamChainId');
   });
 
   it('can get runner options for deployment', () => {
-    const deployment = loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0_node_options.yaml')).asV1_0_0
+    const deployment = loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0_node_options.yaml')).asV1_0_0
       .deployment;
     expect(deployment.runner.node.options?.unsafe).toBeTruthy();
   });
 
   it('can validate deployment runner versions', () => {
     const deployment = new DeploymentV1_0_0();
-    const nodeImp = new SubstrateRunnerNodeImpl();
+    const nodeImp = new CardanoRunnerNodeImpl();
     const queryImp = new RunnerQueryBaseModel();
     deployment.specVersion = '1.0.0';
-    deployment.runner = new SubstrateRunnerSpecsImpl();
+    deployment.runner = new CardanoRunnerSpecsImpl();
 
     nodeImp.name = '@subql/node';
     nodeImp.version = '0.29.1';
@@ -75,41 +75,41 @@ describe('project.yaml', () => {
   });
 
   it('can validate bypass blocks', () => {
-    const deployment = loadSubstrateProjectManifest(path.join(projectsDir, 'project_bypass.yaml')).asV1_0_0.deployment;
-    const range_deployment = loadSubstrateProjectManifest(path.join(projectsDir, 'project_bypass_range.yaml')).asV1_0_0
+    const deployment = loadCardanoProjectManifest(path.join(projectsDir, 'project_bypass.yaml')).asV1_0_0.deployment;
+    const range_deployment = loadCardanoProjectManifest(path.join(projectsDir, 'project_bypass_range.yaml')).asV1_0_0
       .deployment;
 
     expect(deployment.network.bypassBlocks).not.toBeNull();
     expect(range_deployment.network.bypassBlocks).not.toBeNull();
 
-    expect(() => loadSubstrateProjectManifest(path.join(projectsDir, 'project_bypass.yaml'))).not.toThrow();
-    expect(() => loadSubstrateProjectManifest(path.join(projectsDir, 'project_bypass_range.yaml'))).not.toThrow();
+    expect(() => loadCardanoProjectManifest(path.join(projectsDir, 'project_bypass.yaml'))).not.toThrow();
+    expect(() => loadCardanoProjectManifest(path.join(projectsDir, 'project_bypass_range.yaml'))).not.toThrow();
   });
 
   it('can validate a v1.0.0 project.yaml with unsupported runner node', () => {
-    expect(() => loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0_bad_runner.yaml'))).toThrow();
+    expect(() => loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0_bad_runner.yaml'))).toThrow();
   });
 
   it('can throw error with unsupported runner version', () => {
     expect(() =>
-      loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0_bad_runner_version.yaml'))
+      loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0_bad_runner_version.yaml'))
     ).toThrow();
   });
 
   it('can validate a v1.0.0 project.yaml runner and datasource mismatches', () => {
     expect(() =>
-      loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0_runner_ds_mismatch.yaml'))
+      loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0_runner_ds_mismatch.yaml'))
     ).toThrow();
   });
 
   it('can fail validation if custom ds missing processor', () => {
     expect(() =>
-      loadSubstrateProjectManifest(path.join(projectsDir, 'project_0.2.0_invalid_custom_ds.yaml'))
+      loadCardanoProjectManifest(path.join(projectsDir, 'project_0.2.0_invalid_custom_ds.yaml'))
     ).toThrow();
   });
 
   it('can convert project with assets to deployment', () => {
-    const manifest = loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0.yaml'));
+    const manifest = loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0.yaml'));
     expect(manifest.isV1_0_0).toBeTruthy();
     expect(() => manifest.toDeployment()).not.toThrow();
   });
@@ -137,7 +137,7 @@ describe('project.yaml', () => {
   });
 
   it('Preserve Map content on deployment', () => {
-    const manifest = loadSubstrateProjectManifest(path.join(projectsDir, 'project_1.0.0.yaml'));
+    const manifest = loadCardanoProjectManifest(path.join(projectsDir, 'project_1.0.0.yaml'));
 
     expect((toJsonObject(manifest.asImpl.deployment.dataSources[0]) as any).assets).toEqual({
       settings: {

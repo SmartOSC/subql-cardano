@@ -30,11 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [4.7.0] - 2024-07-01
 ### Changed
-- Update with `@subql/node-core`, `@subql/common-substrate`
+- Update with `@subql/node-core`, `@subql/common-cardano`
 
 ## [4.6.6] - 2024-06-21
 ### Fixed
-- Update with common-substrate, fix `EventFilter` incorrectly extend `BlockFilter`, lead dictionary error (#2463)
+- Update with common-cardano, fix `EventFilter` incorrectly extend `BlockFilter`, lead dictionary error (#2463)
 - Fix dictionary query entries included undefined fields (#2463)
 
 ## [4.6.5] - 2024-06-18
@@ -833,7 +833,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.30.0] - 2022-03-01
 ### Changed
-- Update imports, as substrate related components now will be imported from `subql/common-substrate`. (#781)
+- Update imports, as substrate related components now will be imported from `subql/common-cardano`. (#781)
 
 ## [0.29.1] - 2022-02-23
 ### Fixed

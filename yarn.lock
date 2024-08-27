@@ -8562,12 +8562,12 @@ __metadata:
     "@oclif/core": ^2.15.0
     "@subql/common": "workspace:*"
     "@subql/common-algorand": ^4.0.0
+    "@subql/common-cardano": "workspace:*"
     "@subql/common-concordium": ^4.0.1
     "@subql/common-cosmos": ^5.0.0
     "@subql/common-ethereum": ^4.1.0
     "@subql/common-near": ^4.0.0
     "@subql/common-stellar": ^4.0.0
-    "@subql/common-substrate": "workspace:*"
     "@subql/utils": "workspace:*"
     "@types/ejs": ^3.1.0
     "@types/inquirer": ^8.2.0
@@ -8622,6 +8622,23 @@ __metadata:
   checksum: d7d23e8abaeab5805e78fe7178a3d42492d817a618d7a47e4016b50f153610605ebf09eb82fb89711f0abbb1555ef2d63b727c802d0370efc389392b44e68be4
   languageName: node
   linkType: hard
+
+"@subql/common-cardano@workspace:*, @subql/common-cardano@workspace:packages/common-cardano":
+  version: 0.0.0-use.local
+  resolution: "@subql/common-cardano@workspace:packages/common-cardano"
+  dependencies:
+    "@subql/common": "workspace:*"
+    "@subql/types": "workspace:*"
+    "@types/bn.js": 4.11.6
+    "@types/js-yaml": ^4.0.4
+    "@types/pino": ^6.3.12
+    js-yaml: ^4.1.0
+    reflect-metadata: ^0.1.13
+  peerDependencies:
+    class-transformer: "*"
+    class-validator: "*"
+  languageName: unknown
+  linkType: soft
 
 "@subql/common-concordium@npm:^4.0.1":
   version: 4.0.1
@@ -8716,23 +8733,6 @@ __metadata:
   checksum: ffef24e75724926058f880f43a1d2971da512671461a6b51284ee32392d6635725967e23950c2ac081f30ceaf4c07ff200c855be10e30a9d5013899924d847b8
   languageName: node
   linkType: hard
-
-"@subql/common-substrate@workspace:*, @subql/common-substrate@workspace:packages/common-substrate":
-  version: 0.0.0-use.local
-  resolution: "@subql/common-substrate@workspace:packages/common-substrate"
-  dependencies:
-    "@subql/common": "workspace:*"
-    "@subql/types": "workspace:*"
-    "@types/bn.js": 4.11.6
-    "@types/js-yaml": ^4.0.4
-    "@types/pino": ^6.3.12
-    js-yaml: ^4.1.0
-    reflect-metadata: ^0.1.13
-  peerDependencies:
-    class-transformer: "*"
-    class-validator: "*"
-  languageName: unknown
-  linkType: soft
 
 "@subql/common@4.1.0, @subql/common@^4.0.0, @subql/common@workspace:*, @subql/common@workspace:packages/common":
   version: 0.0.0-use.local
@@ -8910,7 +8910,7 @@ __metadata:
     "@nestjs/testing": ^9.4.0
     "@polkadot/api": 11.2.1
     "@subql/common": "workspace:*"
-    "@subql/common-substrate": "workspace:*"
+    "@subql/common-cardano": "workspace:*"
     "@subql/node-core": "workspace:*"
     "@subql/types": "workspace:*"
     "@subql/utils": "workspace:*"

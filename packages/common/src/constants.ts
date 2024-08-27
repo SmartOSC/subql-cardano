@@ -19,7 +19,8 @@ export const POI_AWAIT_TIME = 2; // seconds
 
 // NETWORK
 export enum NETWORK_FAMILY {
-  substrate = 'Substrate',
+  cardano = 'Cardano',
+  // substrate = 'Substrate',
   cosmos = 'Cosmos',
   algorand = 'Algorand',
   ethereum = 'Ethereum',
@@ -29,8 +30,8 @@ export enum NETWORK_FAMILY {
 }
 
 export const runnerMapping = {
-  '@subql/node': NETWORK_FAMILY.substrate,
-  '@subql/node-substrate': NETWORK_FAMILY.substrate,
+  '@subql/node': NETWORK_FAMILY.cardano,
+  '@subql/node-substrate': NETWORK_FAMILY.cardano,
   '@subql/node-cosmos': NETWORK_FAMILY.cosmos,
   '@subql/node-algorand': NETWORK_FAMILY.algorand,
   '@subql/node-ethereum': NETWORK_FAMILY.ethereum,

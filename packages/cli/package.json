@@ -36,12 +36,12 @@
   },
   "devDependencies": {
     "@subql/common-algorand": "^4.0.0",
+    "@subql/common-cardano": "workspace:*",
     "@subql/common-concordium": "^4.0.1",
     "@subql/common-cosmos": "^5.0.0",
     "@subql/common-ethereum": "^4.1.0",
     "@subql/common-near": "^4.0.0",
     "@subql/common-stellar": "^4.0.0",
-    "@subql/common-substrate": "workspace:*",
     "@types/ejs": "^3.1.0",
     "@types/inquirer": "^8.2.0",
     "@types/node": "^18.16.10",

@@ -9,7 +9,7 @@
   },
   "references": [
     { "path": "../common" },
-    { "path": "../common-substrate" },
+    { "path": "../common-cardano" },
     { "path": "../node-core" },
     { "path": "../types-core" },
     { "path": "../types" },

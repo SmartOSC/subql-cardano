@@ -1,12 +1,12 @@
 import {
-  SubstrateDatasourceKind,
-  SubstrateHandlerKind,
-  SubstrateProject,
+  CardanoDatasourceKind,
+  CardanoHandlerKind,
+  CardanoProject,
   // @ts-ignore
 } from '@subql/types';
 
 // Can expand the Datasource processor types via the genreic param
-const project: SubstrateProject = {
+const project: CardanoProject = {
   specVersion: '1.0.0',
   version: '0.0.1',
   name: 'acala-starter',
@@ -35,13 +35,13 @@ const project: SubstrateProject = {
   },
   dataSources: [
     {
-      kind: SubstrateDatasourceKind.Runtime,
+      kind: CardanoDatasourceKind.Runtime,
       startBlock: 1,
       mapping: {
         file: './dist/index.js',
         handlers: [
           {
-            kind: SubstrateHandlerKind.Event,
+            kind: CardanoHandlerKind.Event,
             handler: 'handleEvent',
             filter: {
               module: 'balances',

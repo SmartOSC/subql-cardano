@@ -511,11 +511,12 @@ async function saveCardanoIBCAssets(eventType: EventType, eventAttribute: EventA
             map.get(EventAttributeChannel.AttributeKeyDstChannel), 
             packetDataObject?.denom,
           )
+          const denomBase = getDenomBase(packetDataObject?.denom)
 
           const newAsset = CardanoIbcAsset.create({
             id: voucherTokenUnit,
             accountAddress: packetDataObject?.receiver,
-            denom: packetDataObject?.denom,
+            denom: denomBase,
             voucherTokenName: voucherTokenName,
             connectionId: map.get(EventAttributeChannel.AttributeKeyConnection),
             srcPort: map.get(EventAttributeChannel.AttributeKeySrcPort),
@@ -635,6 +636,10 @@ async function saveCardanoTransfers(eventType: EventType, txHash: String, blockH
   await newCardanoTransfer.save()
 }
 
+function getDenomBase(denom: string): string {
+  const steps = denom.split("/")
+  return steps.pop()
+}
 function getPathTrace(port: string, channel: string, denom: string): string {
   const steps = denom.split("/")
   const denomBase = steps.pop()
@@ -645,7 +650,11 @@ function getPathTrace(port: string, channel: string, denom: string): string {
   if(resDenom.length == 0) {
     return `${port}/${channel}`
   } else {
-    return `${port}/${channel}/${resDenom}`
+    let res = `${port}/${channel}/${resDenom}`
+    if(res.endsWith("/")) {
+      res = res.slice(0,-1)
+    }
+    return res
   }
 }
 

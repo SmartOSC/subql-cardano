@@ -2,4 +2,4 @@
 // SPDX-License-Identifier: GPL-3.0
 
 export * from './types';
-export * from './substrateDictionary.service';
+export * from './cardanoDictionary.service';

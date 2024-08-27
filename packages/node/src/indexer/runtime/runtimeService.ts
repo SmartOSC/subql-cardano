@@ -4,7 +4,7 @@
 import { Injectable } from '@nestjs/common';
 import { getLogger, profiler } from '@subql/node-core';
 import { ApiService } from '../api.service';
-import { SubstrateDictionaryService } from '../dictionary';
+import { CardanoDictionaryService } from '../dictionary';
 import {
   BaseRuntimeService,
   SPEC_VERSION_BLOCK_GAP,
@@ -16,7 +16,7 @@ const logger = getLogger('RuntimeService');
 export class RuntimeService extends BaseRuntimeService {
   constructor(
     protected apiService: ApiService,
-    protected dictionaryService?: SubstrateDictionaryService,
+    protected dictionaryService?: CardanoDictionaryService,
   ) {
     super(apiService);
   }

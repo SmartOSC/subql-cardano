@@ -4,10 +4,10 @@
 import {plainToClass} from 'class-transformer';
 import {validateSync} from 'class-validator';
 import {ChainTypes} from './models';
-import {SubstrateProjectManifestVersioned, VersionedProjectManifest} from './versioned';
+import {CardanoProjectManifestVersioned, VersionedProjectManifest} from './versioned';
 
-export function parseSubstrateProjectManifest(raw: unknown): SubstrateProjectManifestVersioned {
-  const projectManifest = new SubstrateProjectManifestVersioned(raw as VersionedProjectManifest);
+export function parseCardanoProjectManifest(raw: unknown): CardanoProjectManifestVersioned {
+  const projectManifest = new CardanoProjectManifestVersioned(raw as VersionedProjectManifest);
   projectManifest.validate();
   return projectManifest;
 }

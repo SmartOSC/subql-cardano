@@ -9,10 +9,8 @@ import {
   NodeConfig,
   StoreCacheService,
 } from '@subql/node-core';
-import { substrateHeaderToHeader } from '../utils/substrate';
 import { ApiService } from './api.service';
 import { BlockContent, CardanoBlockContent, LightBlockContent } from './types';
-import { cardanoBlockToHeader } from '../utils/cardano';
 import { getChainTipByHeight } from '../utils/cache';
 import { Block } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { BlockFetchBlock } from '@harmoniclabs/ouroboros-miniprotocols-ts';

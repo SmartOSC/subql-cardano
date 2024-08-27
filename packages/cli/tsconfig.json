@@ -10,7 +10,7 @@
     "outDir": "lib",
     "noImplicitAny": true
   },
-  "references": [{"path": "../common"}, {"path": "../common-substrate"}, {"path": "../utils"}],
+  "references": [{"path": "../common"}, {"path": "../common-cardano"}, {"path": "../utils"}],
   "include": ["src/**/*"],
   "exclude": ["test/schemaTest/project.ts"]
 }

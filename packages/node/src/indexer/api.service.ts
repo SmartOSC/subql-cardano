@@ -28,10 +28,10 @@ import {
   MetadataMismatchError,
   exitWithError,
 } from '@subql/node-core';
-import { SubstrateNetworkConfig } from '@subql/types';
+import { CardanoNetworkConfig } from '@subql/types';
 import { SubstrateNodeConfig } from '../configure/NodeConfig';
 import { SubqueryProject } from '../configure/SubqueryProject';
-import { isOnlyEventHandlers } from '../utils/project';
+// import { isOnlyEventHandlers } from '../utils/project';
 import * as CardanoUtil from '../utils/cardano';
 import { CardanoBlockContent } from './types';
 import {
@@ -162,9 +162,11 @@ export class ApiService
   }
 
   async init(): Promise<ApiService> {
+    console.log("api init");
+    
     overrideConsoleWarn();
     let chainTypes: RegisteredTypes | undefined;
-    let network: SubstrateNetworkConfig;
+    let network: CardanoNetworkConfig;
     try {
       chainTypes = await updateChainTypesHasher(this.project.chainTypes);
       network = this.project.network;
@@ -190,7 +192,8 @@ export class ApiService
   }
 
   updateBlockFetching(): void {
-    const onlyEventHandlers = isOnlyEventHandlers(this.project);
+    // const onlyEventHandlers = isOnlyEventHandlers(this.project);
+    const onlyEventHandlers = false
     const skipTransactions =
       this.nodeConfig.skipTransactions && onlyEventHandlers;
 

@@ -6,16 +6,16 @@ import { gql } from '@apollo/client/core';
 import {
   isCustomDs,
   isRuntimeDs,
-  SubstrateCallFilter,
-  SubstrateCustomHandler,
-  SubstrateDataSource,
-  SubstrateEventFilter,
-  SubstrateHandler,
-  SubstrateHandlerKind,
-  SubstrateRuntimeHandlerFilter,
-} from '@subql/common-substrate';
+  CardanoCallFilter,
+  CardanoCustomHandler,
+  CardanoDataSource, 
+  CardanoEventFilter,
+  CardanoHandler,
+  CardanoHandlerKind,
+  CardanoRuntimeHandlerFilter,
+} from 'packages/common-cardano/src';
 import { NodeConfig, DictionaryV1, timeout, getLogger } from '@subql/node-core';
-import { SubstrateBlockFilter, SubstrateDatasource } from '@subql/types';
+import { CardanoBlockFilter, CardanoDatasource } from '@subql/types';
 import {
   DictionaryQueryCondition,
   DictionaryQueryEntry as DictionaryV1QueryEntry,
@@ -29,24 +29,24 @@ import { SpecVersion, SpecVersionDictionary } from '../types';
 
 type GetDsProcessor = DsProcessorService['getDsProcessor'];
 
-function eventFilterToQueryEntry(
-  filter: SubstrateEventFilter,
-): DictionaryV1QueryEntry {
-  const conditions: DictionaryQueryCondition[] = [];
-  if (filter.method) {
-    conditions.push({ field: 'event', value: filter.method });
-  }
-  if (filter.module) {
-    conditions.push({ field: 'module', value: filter.module });
-  }
-  return {
-    entity: 'events',
-    conditions,
-  };
-}
+// function eventFilterToQueryEntry(
+//   filter: CardanoBlockFilter,
+// ): DictionaryV1QueryEntry {
+//   const conditions: DictionaryQueryCondition[] = [];
+//   if (filter.method) {
+//     conditions.push({ field: 'event', value: filter.method });
+//   }
+//   if (filter.module) {
+//     conditions.push({ field: 'module', value: filter.module });
+//   }
+//   return {
+//     entity: 'events',
+//     conditions,
+//   };
+// }
 
 function callFilterToQueryEntry(
-  filter: SubstrateCallFilter,
+  filter: CardanoCallFilter,
 ): DictionaryV1QueryEntry {
   return {
     entity: 'extrinsics',
@@ -55,7 +55,7 @@ function callFilterToQueryEntry(
         (key) =>
           ({
             field: key === 'method' ? 'call' : key,
-            value: filter[key as keyof SubstrateCallFilter],
+            value: filter[key as keyof CardanoCallFilter],
           }) as DictionaryQueryCondition,
       )
       .filter((c) => c.value !== undefined),
@@ -63,10 +63,10 @@ function callFilterToQueryEntry(
 }
 
 function getBaseHandlerKind(
-  ds: SubstrateDataSource,
-  handler: SubstrateHandler,
+  ds: CardanoDataSource,
+  handler: CardanoHandler,
   getDsProcessor: GetDsProcessor,
-): SubstrateHandlerKind | undefined {
+): CardanoHandlerKind | undefined {
   if (isRuntimeDs(ds) && isBaseHandler(handler)) {
     return handler.kind;
   } else if (isCustomDs(ds) && isCustomHandler(handler)) {
@@ -81,8 +81,8 @@ function getBaseHandlerKind(
   }
 }
 
-function getBaseHandlerFilters<T extends SubstrateRuntimeHandlerFilter>(
-  ds: SubstrateDataSource,
+function getBaseHandlerFilters<T extends CardanoRuntimeHandlerFilter>(
+  ds: CardanoDataSource,
   handlerKind: string,
   getDsProcessor: GetDsProcessor,
 ): T[] {
@@ -99,7 +99,7 @@ function getBaseHandlerFilters<T extends SubstrateRuntimeHandlerFilter>(
 
 // eslint-disable-next-line complexity
 export function buildDictionaryV1QueryEntries(
-  dataSources: SubstrateDatasource[],
+  dataSources: CardanoDatasource[],
   getDsProcessor: GetDsProcessor,
 ): DictionaryV1QueryEntry[] {
   const queryEntries: DictionaryV1QueryEntry[] = [];
@@ -108,11 +108,11 @@ export function buildDictionaryV1QueryEntries(
     const plugin = isCustomDs(ds) ? getDsProcessor(ds) : undefined;
     for (const handler of ds.mapping.handlers) {
       const baseHandlerKind = getBaseHandlerKind(ds, handler, getDsProcessor);
-      let filterList: SubstrateRuntimeHandlerFilter[] = [];
+      let filterList: CardanoRuntimeHandlerFilter[] = [];
       if (isCustomDs(ds)) {
         assert(plugin, 'plugin should be defined');
         const processor = plugin.handlerProcessors[handler.kind];
-        const filter = (handler as SubstrateCustomHandler).filter;
+        const filter = (handler as CardanoCustomHandler).filter;
         if (processor.dictionaryQuery && filter) {
           const queryEntry = processor.dictionaryQuery(filter, ds);
           if (queryEntry) {
@@ -120,7 +120,7 @@ export function buildDictionaryV1QueryEntries(
             continue;
           }
         }
-        filterList = getBaseHandlerFilters<SubstrateRuntimeHandlerFilter>(
+        filterList = getBaseHandlerFilters<CardanoRuntimeHandlerFilter>(
           ds,
           handler.kind,
           getDsProcessor,
@@ -132,15 +132,15 @@ export function buildDictionaryV1QueryEntries(
       filterList = filterList.filter(Boolean);
       if (!filterList.length) return [];
       switch (baseHandlerKind) {
-        case SubstrateHandlerKind.Block:
-          for (const filter of filterList as SubstrateBlockFilter[]) {
+        case CardanoHandlerKind.Block:
+          for (const filter of filterList as CardanoBlockFilter[]) {
             if (filter.modulo === undefined) {
               return [];
             }
           }
           break;
-        case SubstrateHandlerKind.Call: {
-          for (const filter of filterList as SubstrateCallFilter[]) {
+        case CardanoHandlerKind.Call: {
+          for (const filter of filterList as CardanoCallFilter[]) {
             if (
               filter.module !== undefined ||
               filter.method !== undefined ||
@@ -154,16 +154,16 @@ export function buildDictionaryV1QueryEntries(
           }
           break;
         }
-        case SubstrateHandlerKind.Event: {
-          for (const filter of filterList as SubstrateEventFilter[]) {
-            if (filter.module !== undefined || filter.method !== undefined) {
-              queryEntries.push(eventFilterToQueryEntry(filter));
-            } else {
-              return [];
-            }
-          }
-          break;
-        }
+        // case CardanoHandlerKind.Event: {
+        //   for (const filter of filterList as CardanoEventFilter[]) {
+        //     if (filter.module !== undefined || filter.method !== undefined) {
+        //       queryEntries.push(eventFilterToQueryEntry(filter));
+        //     } else {
+        //       return [];
+        //     }
+        //   }
+        //   break;
+        // }
         default: {
           throw new Error(`Unsupported handler kind: ${baseHandlerKind}`);
         }
@@ -182,7 +182,7 @@ export function buildDictionaryV1QueryEntries(
 
 const logger = getLogger('substrate-dictionary-V1');
 
-export class SubstrateDictionaryV1 extends DictionaryV1<SubstrateDataSource> {
+export class CardanoDictionaryV1 extends DictionaryV1<CardanoDataSource> {
   constructor(
     project: SubqueryProject,
     nodeConfig: NodeConfig,
@@ -199,8 +199,8 @@ export class SubstrateDictionaryV1 extends DictionaryV1<SubstrateDataSource> {
     getDsProcessor: GetDsProcessor,
     dictionaryUrl: string,
     chainId?: string,
-  ): Promise<SubstrateDictionaryV1> {
-    const dictionary = new SubstrateDictionaryV1(
+  ): Promise<CardanoDictionaryV1> {
+    const dictionary = new CardanoDictionaryV1(
       project,
       nodeConfig,
       getDsProcessor,
@@ -212,7 +212,7 @@ export class SubstrateDictionaryV1 extends DictionaryV1<SubstrateDataSource> {
   }
 
   buildDictionaryQueryEntries(
-    dataSources: SubstrateDataSource[],
+    dataSources: CardanoDataSource[],
   ): DictionaryV1QueryEntry[] {
     return buildDictionaryV1QueryEntries(dataSources, this.getDsProcessor);
   }
