@@ -11,7 +11,7 @@ import {
   TestRunner,
   IBlock,
 } from '@subql/node-core';
-import { SubstrateDatasource } from '@subql/types';
+import { CardanoDatasource } from '@subql/types';
 import { SubqueryProject } from '../configure/SubqueryProject';
 import { ApiService } from '../indexer/api.service';
 import { IndexerManager } from '../indexer/indexer.manager';
@@ -24,7 +24,7 @@ export class TestingService extends BaseTestingService<
   ApiPromise,
   ApiAt,
   BlockContent | LightBlockContent,
-  SubstrateDatasource
+  CardanoDatasource
 > {
   constructor(
     nodeConfig: NodeConfig,
@@ -36,7 +36,7 @@ export class TestingService extends BaseTestingService<
   async getTestRunner(): Promise<
     [
       close: () => Promise<void>,
-      runner: TestRunner<ApiPromise, ApiAt, BlockContent, SubstrateDatasource>,
+      runner: TestRunner<ApiPromise, ApiAt, BlockContent, CardanoDatasource>,
     ]
   > {
     const testContext = await NestFactory.createApplicationContext(

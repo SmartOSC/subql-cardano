@@ -1,5 +1,5 @@
 {
-  "name": "@subql/common-substrate",
+  "name": "@subql/common-cardano",
   "version": "4.1.0",
   "description": "",
   "scripts": {

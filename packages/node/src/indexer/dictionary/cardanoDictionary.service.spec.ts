@@ -8,9 +8,9 @@ import axios from 'axios';
 import { GraphQLSchema } from 'graphql';
 import { SubqueryProject } from '../../configure/SubqueryProject';
 import { DsProcessorService } from '../ds-processor.service';
-import { SubstrateDictionaryService } from './substrateDictionary.service';
-import { SubstrateDictionaryV1 } from './v1';
-import { SubstrateDictionaryV2 } from './v2';
+import { CardanoDictionaryService } from './cardanoDictionary.service';
+import { CardanoDictionaryV1 } from './v1';
+import { CardanoDictionaryV2 } from './v2';
 
 function testSubqueryProject(
   endpoint: string[],
@@ -34,8 +34,8 @@ function testSubqueryProject(
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-describe('Substrate Dictionary service', function () {
-  let dictionaryService: SubstrateDictionaryService;
+describe('Cardano Dictionary service', function () {
+  let dictionaryService: CardanoDictionaryService;
 
   beforeEach(() => {
     const nodeConfig = new NodeConfig({
@@ -52,7 +52,7 @@ describe('Substrate Dictionary service', function () {
     );
     const dsProcessor = new DsProcessorService(project, nodeConfig);
 
-    dictionaryService = new SubstrateDictionaryService(
+    dictionaryService = new CardanoDictionaryService(
       project,
       nodeConfig,
       new EventEmitter2(),
@@ -65,21 +65,21 @@ describe('Substrate Dictionary service', function () {
   });
 
   it('should use v1 if v2 init failed, can determine dictionary version by init dictionary', async () => {
-    const spyDictionaryV1Create = jest.spyOn(SubstrateDictionaryV1, 'create');
-    const spyDictionaryV2Create = jest.spyOn(SubstrateDictionaryV2, 'create');
+    const spyDictionaryV1Create = jest.spyOn(CardanoDictionaryV1, 'create');
+    const spyDictionaryV2Create = jest.spyOn(CardanoDictionaryV2, 'create');
 
     await dictionaryService.initDictionaries();
     expect(spyDictionaryV2Create).toHaveBeenCalledTimes(1);
     expect(spyDictionaryV1Create).toHaveBeenCalledTimes(1);
     expect(
       (dictionaryService as any)._dictionaries.every(
-        (d: any) => d instanceof SubstrateDictionaryV1,
+        (d: any) => d instanceof CardanoDictionaryV1,
       ),
     ).toBeTruthy();
   });
 
   it('should use v2 if init passed', async () => {
-    const spyDictionaryV1Create = jest.spyOn(SubstrateDictionaryV1, 'create');
+    const spyDictionaryV1Create = jest.spyOn(CardanoDictionaryV1, 'create');
     const mockedResponseData = {
       result: {
         availableBlocks: [{ startHeight: 1, endHeight: 10 }],
@@ -104,7 +104,7 @@ describe('Substrate Dictionary service', function () {
     expect(spyDictionaryV1Create).toHaveBeenCalledTimes(0);
     expect(
       (dictionaryService as any)._dictionaries[0] instanceof
-        SubstrateDictionaryV2,
+        CardanoDictionaryV2,
     ).toBeTruthy();
   });
 });

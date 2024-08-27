@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0
 
-import { CardanoDataSource } from '@subql/common-substrate';
+import { CardanoDataSource } from 'packages/common-cardano/src';
 import {
   NodeConfig,
   DictionaryV2,
@@ -13,14 +13,14 @@ import {
 } from '@subql/node-core';
 import { CardanoBlock, CardanoDatasource } from '@subql/types';
 import { SubqueryProject } from '../../../configure/SubqueryProject';
-import { SubstrateDictionaryV2QueryEntry } from './types';
+import { CardanoDictionaryV2QueryEntry } from './types';
 
 const MIN_FETCH_LIMIT = 200;
 
 export function buildDictionaryV2QueryEntry(
   dataSources: CardanoDataSource[],
-): SubstrateDictionaryV2QueryEntry {
-  const dictionaryConditions: SubstrateDictionaryV2QueryEntry = {
+): CardanoDictionaryV2QueryEntry {
+  const dictionaryConditions: CardanoDictionaryV2QueryEntry = {
     logs: [],
     transactions: [],
   };
@@ -28,10 +28,10 @@ export function buildDictionaryV2QueryEntry(
   return dictionaryConditions;
 }
 
-export class SubstrateDictionaryV2 extends DictionaryV2<
+export class CardanoDictionaryV2 extends DictionaryV2<
   CardanoBlock,
   CardanoDatasource,
-  SubstrateDictionaryV2QueryEntry
+  CardanoDictionaryV2QueryEntry
 > {
   protected buildDictionaryQueryEntries(
     dataSources: CardanoDataSource[],
@@ -53,8 +53,8 @@ export class SubstrateDictionaryV2 extends DictionaryV2<
     nodeConfig: NodeConfig,
     project: SubqueryProject,
     chainId?: string,
-  ): Promise<SubstrateDictionaryV2> {
-    const dictionary = new SubstrateDictionaryV2(
+  ): Promise<CardanoDictionaryV2> {
+    const dictionary = new CardanoDictionaryV2(
       endpoint,
       nodeConfig,
       project,
@@ -80,7 +80,7 @@ export class SubstrateDictionaryV2 extends DictionaryV2<
     return this.getData(startBlock, queryEndBlock, limit);
   }
 
-  // TODO, complete this once substrate support v2
+  // TODO, complete this once cardano support v2
   convertResponseBlocks(
     result: RawDictionaryResponseData<any>,
   ): DictionaryResponse<IBlock<CardanoBlock>> | undefined {

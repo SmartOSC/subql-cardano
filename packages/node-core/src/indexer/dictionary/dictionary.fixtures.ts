@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0
 
-import {SubstrateDatasourceKind, SubstrateHandlerKind} from '@subql/types';
+import {CardanoDatasourceKind, CardanoHandlerKind} from '@subql/types';
 import {DictionaryQueryEntry} from '@subql/types-core';
 import {NodeConfig} from '../../configure';
 import {BlockHeightMap} from '../../utils';
@@ -53,33 +53,33 @@ export const HAPPY_PATH_CONDITIONS: DictionaryQueryEntry[] = [
 ];
 
 export const mockDS = [
+  // {
+  //   name: 'runtime',
+  //   kind: SubstrateDatasourceKind.Runtime,
+  //   startBlock: 100,
+  //   mapping: {
+  //     handlers: [
+  //       {
+  //         handler: 'handleTest',
+  //         kind: CardanoHandlerKind.Event,
+  //         filter: {
+  //           module: 'balances',
+  //           method: 'Deposit',
+  //         },
+  //       },
+  //     ],
+  //     file: '',
+  //   },
+  // },
   {
     name: 'runtime',
-    kind: SubstrateDatasourceKind.Runtime,
-    startBlock: 100,
-    mapping: {
-      handlers: [
-        {
-          handler: 'handleTest',
-          kind: SubstrateHandlerKind.Event,
-          filter: {
-            module: 'balances',
-            method: 'Deposit',
-          },
-        },
-      ],
-      file: '',
-    },
-  },
-  {
-    name: 'runtime',
-    kind: SubstrateDatasourceKind.Runtime,
+    kind: CardanoDatasourceKind.Runtime,
     startBlock: 500,
     mapping: {
       handlers: [
         {
           handler: 'handleTest',
-          kind: SubstrateHandlerKind.Call,
+          kind: CardanoHandlerKind.Call,
           filter: {
             module: 'balances',
             method: 'Deposit',
@@ -92,13 +92,13 @@ export const mockDS = [
   },
   {
     name: 'runtime',
-    kind: SubstrateDatasourceKind.Runtime,
+    kind: CardanoDatasourceKind.Runtime,
     startBlock: 1000,
     mapping: {
       handlers: [
         {
           handler: 'handleTest',
-          kind: SubstrateHandlerKind.Call,
+          kind: CardanoHandlerKind.Call,
           filter: {
             module: 'balances',
             method: 'Deposit',

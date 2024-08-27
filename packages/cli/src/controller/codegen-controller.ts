@@ -11,7 +11,7 @@ import {
   loadFromJsonOrYaml,
   NETWORK_FAMILY,
 } from '@subql/common';
-import type {SubstrateCustomDatasource} from '@subql/types';
+import type {CardanoCustomDatasource} from '@subql/types';
 import {BaseDataSource, BaseTemplateDataSource, ProjectManifestV1_0_0, TemplateBase} from '@subql/types-core';
 import {CosmosRuntimeDatasource} from '@subql/types-cosmos/dist/project';
 import type {
@@ -35,7 +35,7 @@ import {prepareDirPath, renderTemplate} from '../utils';
 
 export type TemplateKind = BaseTemplateDataSource;
 
-export type DatasourceKind = SubstrateCustomDatasource | EthereumDs | EthereumCustomDs;
+export type DatasourceKind = CardanoCustomDatasource | EthereumDs | EthereumCustomDs;
 
 const MODEL_TEMPLATE_PATH = path.resolve(__dirname, '../template/model.ts.ejs');
 const MODELS_INDEX_TEMPLATE_PATH = path.resolve(__dirname, '../template/models-index.ts.ejs');

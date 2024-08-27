@@ -25,7 +25,7 @@ import {
   BlockDispatcherService,
   WorkerBlockDispatcherService,
 } from './blockDispatcher';
-import { SubstrateDictionaryService } from './dictionary/substrateDictionary.service';
+import { CardanoDictionaryService } from './dictionary/cardanoDictionary.service';
 import { DsProcessorService } from './ds-processor.service';
 import { DynamicDsService } from './dynamic-ds.service';
 import { FetchService } from './fetch.service';
@@ -115,7 +115,7 @@ import { CustomSandboxService } from './customSandbox.service';
     ConnectionPoolService,
     IndexingBenchmarkService,
     PoiBenchmarkService,
-    SubstrateDictionaryService,
+    CardanoDictionaryService,
     CustomSandboxService,
     DsProcessorService,
     DynamicDsService,

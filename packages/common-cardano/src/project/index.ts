@@ -7,5 +7,5 @@ export * from './types';
 export * from './utils';
 export * from './versioned';
 
-import {parseSubstrateProjectManifest} from './load';
-export {parseSubstrateProjectManifest as parseProjectManifest};
+import {parseCardanoProjectManifest} from './load';
+export {parseCardanoProjectManifest as parseProjectManifest};

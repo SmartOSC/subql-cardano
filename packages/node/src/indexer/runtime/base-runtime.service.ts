@@ -6,7 +6,6 @@ import { ApiPromise } from '@polkadot/api';
 import { RuntimeVersion } from '@polkadot/types/interfaces';
 import { profiler } from '@subql/node-core';
 import { CardanoBlock } from '@subql/types';
-import * as SubstrateUtil from '../../utils/substrate';
 import { ApiService } from '../api.service';
 import { SpecVersion } from '../dictionary';
 import { CardanoClient } from '../cardano/CardanoClient';

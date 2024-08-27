@@ -40,7 +40,7 @@ export class CardanoClientConnection
     private fetchBlocksBatches: FetchFunc,
   ) {
     this.networkMeta = {
-      chain: 'sidechain',
+      chain: 'cardano',
       specName: '',
       genesisHash: '',
     };

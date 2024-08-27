@@ -6,13 +6,13 @@ import { Injectable } from '@nestjs/common';
 import { RegisteredTypes } from '@polkadot/types/types';
 import { validateSemver } from '@subql/common';
 import {
-  parseSubstrateProjectManifest,
+  parseCardanoProjectManifest,
   ProjectManifestV1_0_0Impl,
   CardanoBlockFilter,
   isRuntimeDs,
   CardanoHandlerKind,
   isCustomDs,
-} from '@subql/common-substrate';
+} from '@subql/common-cardano';
 import {
   insertBlockFiltersCronSchedules,
   loadProjectTemplates,
@@ -95,7 +95,7 @@ export class SubqueryProject implements ISubqueryProject {
       new Error(`Get manifest from project path ${path} failed`),
     );
 
-    const manifest = parseSubstrateProjectManifest(rawManifest);
+    const manifest = parseCardanoProjectManifest(rawManifest);
 
     if (!manifest.isV1_0_0) {
       NOT_SUPPORT('<1.0.0');

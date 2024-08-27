@@ -13,13 +13,13 @@ import {
   ReaderFactory,
 } from '@subql/common';
 import {
-  SubstrateCustomDataSourceImpl,
+  CardanoCustomDataSourceImpl,
   isCustomDs,
-} from '@subql/common-substrate';
+} from '@subql/common-cardano';
 import { updateDataSourcesV1_0_0 } from '@subql/node-core';
 import {
-  SubstrateCustomDatasource,
-  SubstrateRuntimeDatasource,
+  CardanoCustomDatasource,
+  CardanoRuntimeDatasource,
 } from '@subql/types';
 import { Reader } from '@subql/types-core';
 import { SubqueryProject } from './SubqueryProject';
@@ -174,7 +174,7 @@ describe('SubqueryProject', () => {
 });
 
 describe('load asset with updateDataSourcesV1_0_0', () => {
-  const customDsImpl: SubstrateCustomDataSourceImpl[] = [
+  const customDsImpl: CardanoCustomDataSourceImpl[] = [
     {
       kind: 'substrate/FrontierEvm',
       assets: new Map([
@@ -232,8 +232,8 @@ describe('load asset with updateDataSourcesV1_0_0', () => {
 
   it('After fix, it could load asset correctly', async () => {
     const ds = await updateDataSourcesV1_0_0<
-      SubstrateRuntimeDatasource,
-      SubstrateCustomDatasource<any, any>
+      CardanoRuntimeDatasource,
+      CardanoCustomDatasource<any, any>
     >(customDsImpl, reader, root, isCustomDs);
     const inspectAssetPath = (ds[0] as any).assets.get('erc20').file;
     inspectAsset(inspectAssetPath);

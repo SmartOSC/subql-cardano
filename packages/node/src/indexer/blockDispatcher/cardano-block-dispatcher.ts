@@ -5,7 +5,7 @@ import { IBlockDispatcher } from '@subql/node-core';
 import { CardanoBlock } from '@subql/types';
 import { RuntimeService } from '../runtime/runtimeService';
 
-export interface ISubstrateBlockDispatcher
+export interface ICardanoBlockDispatcher
   extends IBlockDispatcher<CardanoBlock> {
   init(
     onDynamicDsCreated: (height: number) => void,

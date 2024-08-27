@@ -4,6 +4,6 @@
 import { DictionaryV2QueryEntry } from '@subql/node-core';
 
 /**
- * Substrate Fat dictionary RPC request filter conditions
+ * Cardano Fat dictionary RPC request filter conditions
  */
-export type SubstrateDictionaryV2QueryEntry = DictionaryV2QueryEntry;
+export type CardanoDictionaryV2QueryEntry = DictionaryV2QueryEntry;

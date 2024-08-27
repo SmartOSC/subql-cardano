@@ -8,23 +8,23 @@ import {ProjectManifestV1_0_0Impl} from './v1_0_0';
 export type VersionedProjectManifest = {specVersion: string};
 
 /* Retain support for all versions here to continue support for migrations */
-const SUBSTRATE_SUPPORTED_VERSIONS = {
+const CARDANO_SUPPORTED_VERSIONS = {
   '1.0.0': ProjectManifestV1_0_0Impl,
 };
 
-type Versions = keyof typeof SUBSTRATE_SUPPORTED_VERSIONS;
+type Versions = keyof typeof CARDANO_SUPPORTED_VERSIONS;
 
-export type ProjectManifestImpls = InstanceType<(typeof SUBSTRATE_SUPPORTED_VERSIONS)[Versions]>;
+export type ProjectManifestImpls = InstanceType<(typeof CARDANO_SUPPORTED_VERSIONS)[Versions]>;
 
 export function manifestIsV1_0_0(manifest: ICardanoProjectManifest): manifest is ProjectManifestV1_0_0Impl {
   return manifest.specVersion === '1.0.0';
 }
 
-export class SubstrateProjectManifestVersioned implements ICardanoProjectManifest {
+export class CardanoProjectManifestVersioned implements ICardanoProjectManifest {
   private _impl: ProjectManifestImpls;
 
   constructor(projectManifest: VersionedProjectManifest) {
-    const klass = SUBSTRATE_SUPPORTED_VERSIONS[projectManifest.specVersion as Versions];
+    const klass = CARDANO_SUPPORTED_VERSIONS[projectManifest.specVersion as Versions];
     if (!klass) {
       throw new Error('specVersion not supported for project manifest file');
     }

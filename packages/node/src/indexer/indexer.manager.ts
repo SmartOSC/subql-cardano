@@ -13,7 +13,7 @@ import {
   CardanoCustomDataSource,
   CardanoHandlerKind,
   CardanoRuntimeHandlerInputMap,
-} from '@subql/common-substrate';
+} from '@subql/common-cardano';
 import {
   NodeConfig,
   profiler,
@@ -32,7 +32,7 @@ import {
   CardanoExtrinsic,
 } from '@subql/types';
 import { CardanoProjectDs } from '../configure/SubqueryProject';
-import * as SubstrateUtil from '../utils/substrate';
+import * as CardanoUtil from '../utils/cardano';
 import { ApiService as CardanoApiService } from './api.service';
 import { DsProcessorService } from './ds-processor.service';
 import { DynamicDsService } from './dynamic-ds.service';
@@ -200,11 +200,6 @@ const FilterTypeMap = {
   [CardanoHandlerKind.Block]: (
     block: CardanoBlock,
     filter?: CardanoBlockFilter,
-  ) => !!SubstrateUtil.filterBlock(block, filter),
-  // [CardanoHandlerKind.CardanoBlock]: (
-  //   block: SubstrateBlock,
-  //   filter?: SubstrateBlockFilter,
-  // ) => !!SubstrateUtil.filterBlock(block, filter),
-  // [CardanoHandlerKind.Event]: SubstrateUtil.filterEvent,
-  [CardanoHandlerKind.Call]: SubstrateUtil.filterExtrinsic,
+  ) => !!CardanoUtil.filterBlock(block, filter),
+  [CardanoHandlerKind.Call]: CardanoUtil.filterExtrinsic,
 };

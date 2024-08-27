@@ -6,7 +6,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { ApiPromise } from '@polkadot/api';
 
-import { isCustomDs, CardanoHandlerKind } from '@subql/common-substrate';
+import { isCustomDs, CardanoHandlerKind } from '@subql/common-cardano';
 import {
   NodeConfig,
   BaseFetchService,
@@ -26,10 +26,9 @@ import {
 import util from 'util';
 import { CardanoDatasource, CardanoBlock } from '@subql/types';
 import { SubqueryProject } from '../configure/SubqueryProject';
-import { substrateHeaderToHeader } from '../utils/substrate';
 import { ApiService } from './api.service';
-import { ISubstrateBlockDispatcher } from './blockDispatcher/cardano-block-dispatcher';
-import { SubstrateDictionaryService } from './dictionary/substrateDictionary.service';
+import { ICardanoBlockDispatcher } from './blockDispatcher/cardano-block-dispatcher';
+import { CardanoDictionaryService } from './dictionary/cardanoDictionary.service';
 import { ProjectService } from './project.service';
 import { RuntimeService } from './runtime/runtimeService';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
@@ -53,7 +52,7 @@ const wokerLogger = getLogger('WorkerSyncCardano');
 export class FetchService
   extends BaseFetchService<
     CardanoDatasource,
-    ISubstrateBlockDispatcher,
+    ICardanoBlockDispatcher,
     CardanoBlock
   >
   implements OnApplicationShutdown
@@ -72,8 +71,8 @@ export class FetchService
     @Inject('IProjectService') projectService: ProjectService,
     @Inject('ISubqueryProject') project: SubqueryProject,
     @Inject('IBlockDispatcher')
-    blockDispatcher: ISubstrateBlockDispatcher,
-    dictionaryService: SubstrateDictionaryService,
+    blockDispatcher: ICardanoBlockDispatcher,
+    dictionaryService: CardanoDictionaryService,
     unfinalizedBlocksService: UnfinalizedBlocksService,
     eventEmitter: EventEmitter2,
     schedulerRegistry: SchedulerRegistry,

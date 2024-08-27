@@ -3,7 +3,7 @@
 
 import {promisify} from 'util';
 import {mapToObject, ReaderFactory, toJsonObject} from '@subql/common';
-import {parseProjectManifest} from '@subql/common-substrate';
+import {parseProjectManifest} from 'packages/common-cardano/src';
 import rimraf from 'rimraf';
 import {createMultiChainTestProject, createTestProject} from '../createProject.fixtures';
 import {getDirectoryCid, uploadToIpfs} from './publish-controller';

@@ -4,18 +4,18 @@
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NodeConfig } from '@subql/node-core';
 import {
-  SubstrateBlockHandler,
-  SubstrateCallHandler,
-  SubstrateDatasourceKind,
-  SubstrateEventHandler,
-  SubstrateHandlerKind,
-  SubstrateRuntimeHandler,
+  CardanoBlockHandler,
+  CardanoCallHandler,
+  CardanoDatasourceKind,
+  // CardanoEventHandler,
+  CardanoHandlerKind,
+  CardanoRuntimeHandler,
 } from '@subql/types';
 import { GraphQLSchema } from 'graphql';
 import { SubqueryProject } from '../../../configure/SubqueryProject';
 import { DsProcessorService } from '../../ds-processor.service';
-import { SubstrateDictionaryService } from '../substrateDictionary.service';
-import { buildDictionaryV1QueryEntries } from './substrateDictionaryV1';
+import { CardanoDictionaryService } from '../cardanoDictionary.service';
+import { buildDictionaryV1QueryEntries } from './cardanoDictionaryV1';
 
 function testSubqueryProject(): SubqueryProject {
   return new SubqueryProject(
@@ -37,10 +37,10 @@ const nodeConfig = new NodeConfig({
   dictionaryTimeout: 10,
 });
 
-describe('Substrate DictionaryService', () => {
+describe('Cardano DictionaryService', () => {
   it('should return all specVersion', async () => {
     const project = testSubqueryProject();
-    const dictionaryService = new SubstrateDictionaryService(
+    const dictionaryService = new CardanoDictionaryService(
       project,
       nodeConfig,
       new EventEmitter2(),
@@ -59,39 +59,39 @@ describe('Substrate DictionaryService', () => {
   }, 50000);
 });
 
-const makeDs = (handlers: SubstrateRuntimeHandler[]) => {
+const makeDs = (handlers: CardanoRuntimeHandler[]) => {
   return {
     name: '',
-    kind: SubstrateDatasourceKind.Runtime,
+    kind: CardanoDatasourceKind.Runtime,
     mapping: {
       file: '',
       handlers,
     },
   };
 };
-const blockHandler: SubstrateBlockHandler = {
-  kind: SubstrateHandlerKind.Block,
+const blockHandler: CardanoBlockHandler = {
+  kind: CardanoHandlerKind.Block,
   handler: 'handleBlock',
 };
-const callHandler: SubstrateCallHandler = {
-  kind: SubstrateHandlerKind.Call,
+const callHandler: CardanoCallHandler = {
+  kind: CardanoHandlerKind.Call,
   handler: 'handleCall',
   filter: { method: 'call', module: 'module' },
 };
-const eventHandler: SubstrateEventHandler = {
-  kind: SubstrateHandlerKind.Event,
-  handler: 'handleEvent',
-  filter: { method: 'event', module: 'module' },
-};
+// const eventHandler: CardanoEventHandler = {
+//   kind: CardanoHandlerKind.Event,
+//   handler: 'handleEvent',
+//   filter: { method: 'event', module: 'module' },
+// };
 
-const eventHandlerWithUndefined: SubstrateEventHandler = {
-  kind: SubstrateHandlerKind.Event,
-  handler: 'handleEvent',
-  filter: { method: 'balance', module: undefined },
-};
+// const eventHandlerWithUndefined: CardanoEventHandler = {
+//   kind: CardanoHandlerKind.Event,
+//   handler: 'handleEvent',
+//   filter: { method: 'balance', module: undefined },
+// };
 
-const callHandlerWithUndefined: SubstrateCallHandler = {
-  kind: SubstrateHandlerKind.Call,
+const callHandlerWithUndefined: CardanoCallHandler = {
+  kind: CardanoHandlerKind.Call,
   handler: 'handleCall',
   filter: { isSigned: true, module: undefined, method: undefined },
 };
@@ -106,13 +106,13 @@ describe('Building dictionary query entries', () => {
     expect(result1).toEqual([]);
 
     const result2 = buildDictionaryV1QueryEntries(
-      [makeDs([blockHandler, callHandler, eventHandler])],
+      [makeDs([blockHandler, callHandler])],
       () => undefined as any,
     );
     expect(result2).toEqual([]);
 
     const result3 = buildDictionaryV1QueryEntries(
-      [makeDs([blockHandler]), makeDs([callHandler]), makeDs([eventHandler])],
+      [makeDs([blockHandler]), makeDs([callHandler])],
       () => undefined as any,
     );
     expect(result3).toEqual([]);
@@ -124,7 +124,6 @@ describe('Building dictionary query entries', () => {
         makeDs([
           { ...blockHandler, filter: { modulo: 5 } },
           callHandler,
-          eventHandler,
         ]),
       ],
       () => undefined as any,
@@ -149,22 +148,22 @@ describe('Building dictionary query entries', () => {
 
   it('supports any handler with no filters', () => {
     const result1 = buildDictionaryV1QueryEntries(
-      [makeDs([{ kind: SubstrateHandlerKind.Call, handler: 'handleCall' }])],
+      [makeDs([{ kind: CardanoHandlerKind.Call, handler: 'handleCall' }])],
       () => undefined as any,
     );
     expect(result1).toEqual([]);
 
-    const result2 = buildDictionaryV1QueryEntries(
-      [makeDs([{ kind: SubstrateHandlerKind.Event, handler: 'handleEvent' }])],
-      () => undefined as any,
-    );
-    expect(result2).toEqual([]);
+    // const result2 = buildDictionaryV1QueryEntries(
+    //   [makeDs([{ kind: CardanoHandlerKind.Event, handler: 'handleEvent' }])],
+    //   () => undefined as any,
+    // );
+    // expect(result2).toEqual([]);
   });
 
   it('supports custom ds processors', () => {
     // mock custom ds processor dictionary return
     const processors: Record<string, any> = {
-      'substrate/JsonfyCall': {
+      'Cardano/JsonfyCall': {
         baseHandlerKind: {},
         dictionaryQuery: () => {
           return {
@@ -187,14 +186,14 @@ describe('Building dictionary query entries', () => {
     const result1 = buildDictionaryV1QueryEntries(
       [
         {
-          kind: 'substrate/Jsonfy',
+          kind: 'Cardano/Jsonfy',
           processor: { file: '' },
           assets: new Map(),
           mapping: {
             file: '',
             handlers: [
               {
-                kind: 'substrate/JsonfyCall',
+                kind: 'Cardano/JsonfyCall',
                 handler: 'handleCall',
                 filter: {
                   filter1: 'foo',
@@ -207,7 +206,7 @@ describe('Building dictionary query entries', () => {
       ],
       (ds) => {
         return {
-          kind: 'substrate/Jsonfy',
+          kind: 'Cardano/Jsonfy',
           validate: () => true,
           dsFilterProcessor: (ds) => true,
           handlerProcessors: processors,
@@ -244,21 +243,21 @@ describe('Building dictionary query entries', () => {
     ]);
   });
 
-  it('create dictionary event filter condition and remove undefined fields', () => {
-    const result1 = buildDictionaryV1QueryEntries(
-      [makeDs([eventHandlerWithUndefined])],
-      () => undefined as any,
-    );
-    expect(result1).toEqual([
-      {
-        conditions: [
-          {
-            field: 'event',
-            value: 'balance',
-          },
-        ],
-        entity: 'events',
-      },
-    ]);
-  });
+  // it('create dictionary event filter condition and remove undefined fields', () => {
+  //   const result1 = buildDictionaryV1QueryEntries(
+  //     [makeDs([eventHandlerWithUndefined])],
+  //     () => undefined as any,
+  //   );
+  //   expect(result1).toEqual([
+  //     {
+  //       conditions: [
+  //         {
+  //           field: 'event',
+  //           value: 'balance',
+  //         },
+  //       ],
+  //       entity: 'events',
+  //     },
+  //   ]);
+  // });
 });

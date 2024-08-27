@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import { Injectable } from '@nestjs/common';
-import { isCustomDs } from '@subql/common-substrate';
+import { isCustomDs } from '@subql/common-cardano';
 import { BaseDsProcessorService } from '@subql/node-core';
 import {
   CardanoCustomDatasource,

@@ -8,12 +8,12 @@ import {
   isRuntimeDs,
   CardanoCallFilter,
   CardanoCustomHandler,
-  CardanoDataSource,
+  CardanoDataSource, 
   CardanoEventFilter,
   CardanoHandler,
   CardanoHandlerKind,
   CardanoRuntimeHandlerFilter,
-} from '@subql/common-substrate';
+} from 'packages/common-cardano/src';
 import { NodeConfig, DictionaryV1, timeout, getLogger } from '@subql/node-core';
 import { CardanoBlockFilter, CardanoDatasource } from '@subql/types';
 import {
@@ -182,7 +182,7 @@ export function buildDictionaryV1QueryEntries(
 
 const logger = getLogger('substrate-dictionary-V1');
 
-export class SubstrateDictionaryV1 extends DictionaryV1<CardanoDataSource> {
+export class CardanoDictionaryV1 extends DictionaryV1<CardanoDataSource> {
   constructor(
     project: SubqueryProject,
     nodeConfig: NodeConfig,
@@ -199,8 +199,8 @@ export class SubstrateDictionaryV1 extends DictionaryV1<CardanoDataSource> {
     getDsProcessor: GetDsProcessor,
     dictionaryUrl: string,
     chainId?: string,
-  ): Promise<SubstrateDictionaryV1> {
-    const dictionary = new SubstrateDictionaryV1(
+  ): Promise<CardanoDictionaryV1> {
+    const dictionary = new CardanoDictionaryV1(
       project,
       nodeConfig,
       getDsProcessor,

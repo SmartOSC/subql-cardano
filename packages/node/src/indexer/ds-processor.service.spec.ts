@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import path from 'path';
-import { isCustomDs } from '@subql/common-substrate';
+import { isCustomDs } from '@subql/common-cardano';
 import { NodeConfig } from '@subql/node-core';
-import { SubstrateCustomDatasource } from '@subql/types';
+import { CardanoCustomDatasource } from '@subql/types';
 import { GraphQLSchema } from 'graphql';
 import { SubqueryProject } from '../configure/SubqueryProject';
 import { DsProcessorService } from './ds-processor.service';
 
 function getTestProject(
-  extraDataSources: SubstrateCustomDatasource[],
+  extraDataSources: CardanoCustomDatasource[],
 ): SubqueryProject {
   return new SubqueryProject(
     'test',
@@ -55,7 +55,7 @@ describe('DsProcessorService', () => {
   });
 
   it('can catch an invalid datasource kind', async () => {
-    const badDs: SubstrateCustomDatasource<string, any> = {
+    const badDs: CardanoCustomDatasource<string, any> = {
       kind: 'substrate/invalid',
       processor: { file: 'contract-processors/dist/jsonfy.js' },
       assets: new Map([]),

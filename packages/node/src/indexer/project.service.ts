@@ -23,7 +23,7 @@ import { DsProcessorService } from './ds-processor.service';
 import { DynamicDsService } from './dynamic-ds.service';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
 import { getStartChainPoint } from '../utils/project';
-import { CardanoCustomDataSource } from '@subql/common-substrate';
+import { CardanoCustomDataSource } from '@subql/common-cardano';
 import { IChainTipSchema } from '../utils/cache';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
