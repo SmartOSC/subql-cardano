@@ -20,7 +20,7 @@ export class MiniProtocolClient {
   private chainSyncClient!: ChainSyncClient;
   private socket!: Socket;
 
-  constructor(private readonly endpoint: string) {}
+  constructor(private readonly endpoint: string, private readonly networkMagic: number) {}
 
   async performHandshake(mplexer: Multiplexer, networkMagic: number) {
     return new Promise<void>((resolve, reject) => {

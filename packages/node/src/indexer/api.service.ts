@@ -183,9 +183,8 @@ export class ApiService
     if (chainTypes) {
       logger.info('Using provided chain types');
     }
-
-    await this.createConnections(network, (endpoint) =>
-      CardanoClientConnection.create(endpoint, this.fetchBlocksBatches()),
+    await this.createConnections(network,  (endpoint, networkMagic) =>
+      CardanoClientConnection.create(endpoint, networkMagic, this.fetchBlocksBatches()),
     );
 
     return this;

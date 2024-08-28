@@ -48,9 +48,10 @@ export class CardanoClientConnection
 
   static async create(
     endpoint: string,
+    networkMagic: number,
     fetchBlocksBatches: FetchFunc,
   ): Promise<CardanoClientConnection> {
-    const miniClient = new MiniProtocolClient(endpoint);
+    const miniClient = new MiniProtocolClient(endpoint, networkMagic);
 
     const api = new CardanoClient(miniClient);
     const connection = new CardanoClientConnection(api, fetchBlocksBatches);
