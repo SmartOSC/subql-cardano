@@ -1,10 +1,8 @@
-version: '3'
-
 services:
   postgres:
     build:
       context: .
-      dockerfile: pg-Dockerfile
+      dockerfile: ./docker/pg-Dockerfile
     ports:
       - 5432:5432
     volumes:
@@ -12,11 +10,11 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
       timeout: 5s
       retries: 5
-      
+
   redis:
     image: redis:7.0-alpine
     ports:
@@ -24,9 +22,11 @@ services:
     command: redis-server
     volumes:
       - .data/redis:/data
-    
-  subql-cardano:
-    image: cuonglv0297/subql-cardano:v1.0.0-non-mithril
+
+  subquery-node:
+    build:
+      context: ../..
+      dockerfile: ./packages/node/Dockerfile
     depends_on:
       "postgres":
         condition: service_healthy
@@ -40,25 +40,37 @@ services:
 
       REDIS_HOST: redis
       REDIS_PORT: 6379
+
     volumes:
-      - ./data/app:/app
-    command:
-      - ${SUB_COMMAND:-} # set SUB_COMMAND env variable to "test" to run tests
-      - -f=/app
-      - --db-schema=app
-      - --workers=4
-      - --batch-size=30
-      - --unfinalized-blocks=true
+      - ./:/app/packages/cardano-ibc
+    # command:
+    #   - ${SUB_COMMAND:-} # set SUB_COMMAND env variable to "test" to run tests
+    #   - -f=/app
+    #   - --db-schema=app
+    #   - --workers=4
+    #   - --batch-size=30
+    #   - --unfinalized-blocks=true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://subquery-node:3000/ready"]
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://subquery-node:3000/ready"
+        ]
       interval: 3s
       timeout: 5s
       retries: 10
-    
+
   graphql-engine:
     image: subquerynetwork/subql-query:latest
     ports:
       - 3003:3000
+    depends_on:
+      "postgres":
+        condition: service_healthy
+      "subquery-node":
+        condition: service_healthy
     restart: always
     environment:
       DB_USER: postgres
@@ -68,6 +80,6 @@ services:
       DB_PORT: 5432
     network_mode: host
     command:
-      - --name=cardano-ibc
+      - --name=app
       - --playground
-      - --indexer=http://127.0.0.1:3001
+      - --indexer=http://subquery-node:3000

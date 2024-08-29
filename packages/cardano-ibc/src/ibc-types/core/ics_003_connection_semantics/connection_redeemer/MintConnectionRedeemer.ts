@@ -9,18 +9,6 @@ export const MintConnectionRedeemerSchema = Data.Enum([
     ConnOpenInit: Data.Object({handler_auth_token: AuthTokenSchema}),
   }),
   Data.Object({
-    ConnOpenInit: Data.Object({handler_auth_token: AuthTokenSchema}),
-  }),
-  Data.Object({
-    ConnOpenTry: Data.Object({
-      handler_auth_token: AuthTokenSchema,
-      client_state: CardanoClientStateSchema,
-      proof_init: MerkleProofSchema,
-      proof_client: MerkleProofSchema,
-      proof_height: HeightSchema,
-    }),
-  }),
-  Data.Object({
     ConnOpenTry: Data.Object({
       handler_auth_token: AuthTokenSchema,
       client_state: CardanoClientStateSchema,

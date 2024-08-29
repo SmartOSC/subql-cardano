@@ -8,17 +8,6 @@ export const MintChannelRedeemerSchema = Data.Enum([
     ChanOpenInit: Data.Object({handler_token: AuthTokenSchema}),
   }),
   Data.Object({
-    ChanOpenInit: Data.Object({handler_token: AuthTokenSchema}),
-  }),
-  Data.Object({
-    ChanOpenTry: Data.Object({
-      handler_token: AuthTokenSchema,
-      counterparty_version: Data.Bytes(),
-      proof_init: MerkleProofSchema,
-      proof_height: HeightSchema,
-    }),
-  }),
-  Data.Object({
     ChanOpenTry: Data.Object({
       handler_token: AuthTokenSchema,
       counterparty_version: Data.Bytes(),

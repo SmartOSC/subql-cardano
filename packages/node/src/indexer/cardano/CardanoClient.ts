@@ -1,4 +1,4 @@
-import { Header, getLogger } from '@subql/node-core';
+import { Header, delay, getLogger } from '@subql/node-core';
 import { MiniProtocolClient } from './miniProtocolClient';
 import { fromHex, toHex } from '../utils/hex';
 import {
@@ -24,6 +24,8 @@ import {
 } from '@harmoniclabs/cbor';
 import { createHash32 } from '../utils/utils';
 import { Socket } from 'net';
+import { uniqueId } from 'lodash';
+import { redis } from '../../utils/cache';
 
 const logger = getLogger('CardanoClient');
 export class CardanoClient {
@@ -34,19 +36,21 @@ export class CardanoClient {
    * @returns Header
    */
   async getHeader(): Promise<Header> {
-    logger.info('Get Header Starting ...');
+    const latestHeaderCached = await redis.get('latestHeader');
+    if (latestHeaderCached) {
+      return JSON.parse(latestHeaderCached);
+    }
     // Get latest tip -> point
     const { chainSyncClient, socket: chainSyncSocket } =
       await this.miniClient.connectChainSyncClient();
+    // Get latest block header
+    const { blockFetchClient, socket: blockFetchSocket } =
+      await this.miniClient.connectBlockFetchClient();
     try {
       const { tip: chainTip } = await chainSyncClient.requestNext();
 
-      // Get latest block header
-      const { blockFetchClient, socket: blockFetchSocket } =
-        await this.miniClient.connectBlockFetchClient();
       let parentHashHeader: string | undefined;
       const blockFetched = await blockFetchClient.request(chainTip.point);
-      this.disconnect(blockFetchClient, blockFetchSocket);
 
       if (blockFetched instanceof BlockFetchBlock) {
         const blockBytes = blockFetched.getBlockBytes();
@@ -59,21 +63,23 @@ export class CardanoClient {
           parentHashHeader = block.header().header_body().prev_hash()?.to_hex();
         }
       }
-      logger.info('Get Header Successful');
-      return {
+
+      const header = {
         blockHash: Buffer.from(chainTip.point.blockHeader?.hash || []).toString(
           'hex',
         ),
         blockHeight: Number(chainTip.blockNo),
         parentHash: parentHashHeader,
       };
+      await redis.set('latestHeader', JSON.stringify(header), 'EX', 2);
+      return header;
     } catch (error) {
       logger.info('Get Header ERR: ', error);
     } finally {
       this.disconnect(chainSyncClient, chainSyncSocket);
+      this.disconnect(blockFetchClient, blockFetchSocket);
     }
-    logger.info('Get Header Retry');
-    return this.getHeader();
+    throw new Error('Get Header Failed');
   }
   getFinalizedHead(): Promise<Header> {
     return this.getHeader();
@@ -83,7 +89,6 @@ export class CardanoClient {
     fromChainPoint: IChainPoint,
     toChainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock[]> {
-    logger.info('Get Blocks By Range Starting ...');
     // Get latest tip -> point
     const { blockFetchClient, socket } =
       await this.miniClient.connectBlockFetchClient();
@@ -98,14 +103,12 @@ export class CardanoClient {
     } finally {
       this.disconnect(blockFetchClient, socket);
     }
-    logger.info('Get Blocks By Range Retry');
-    return this.getBlocksByRangePoint(fromChainPoint, toChainPoint);
+    throw new Error('Get Blocks By Range Point Failed');
   }
 
   async getBlockByPoint(
     chainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock> {
-    logger.info('Get Blocks By Point Starting ...');
     const { blockFetchClient, socket } =
       await this.miniClient.connectBlockFetchClient();
     try {
@@ -116,12 +119,10 @@ export class CardanoClient {
     } finally {
       this.disconnect(blockFetchClient, socket);
     }
-    logger.info('Get Blocks By Point Starting ...');
-    return this.getBlockByPoint(chainPoint);
+    throw new Error('Get Blocks By Point Failed');
   }
 
   async requestNextFromStartPoint(point: IChainPoint): Promise<IChainTip> {
-    logger.info('Request Next From Start Point Starting ...');
     const { chainSyncClient, socket } =
       await this.miniClient.connectChainSyncClient();
     try {

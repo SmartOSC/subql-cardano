@@ -32,8 +32,6 @@ import {
   getIdFromTokenAssets,
   hasTokenPrefix,
 } from './utils/utxo';
-import { ClientDatum } from '../ibc-types/client/ics_007_tendermint_client/client_datum/ClientDatum';
-import { Data } from '../ibc-types/plutus/data';
 import { decodeCborHex, encodeCborObj } from './utils/ibc';
 import { generateTokenName } from './utils/utils';
 import { hashSha3_256 } from './utils/hex';
@@ -165,8 +163,6 @@ export class CustomSandboxService extends SandboxService<
   }
 
   getMultiEraBlockFromCborHex(cborBytes: string): MultiEraBlock {
-    console.log({ cborBytes });
-
     const result = MultiEraBlock.from_cbor_hex(cborBytes);
     return result;
   }

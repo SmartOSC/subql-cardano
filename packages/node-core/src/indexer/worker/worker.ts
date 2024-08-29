@@ -216,5 +216,6 @@ export async function createIndexerWorker<
 
 process.on('uncaughtException', (e) => {
   logger.error(e, 'Uncaught Exception');
-  throw e;
+  // TODO: for cardano because reinitializing the connection before every request
+  // throw e;
 });

@@ -41,13 +41,6 @@ export const SpendChannelRedeemerSchema = Data.Enum([
     }),
   }),
   Data.Object({SendPacket: Data.Object({packet: PacketSchema})}),
-  Data.Literal('ChanCloseInit'),
-  Data.Object({
-    ChanCloseConfirm: Data.Object({
-      proof_init: MerkleProofSchema,
-      proof_height: HeightSchema,
-    }),
-  }),
   Data.Literal('RefreshUtxo'),
 ]);
 export type SpendChannelRedeemer = Data.Static<typeof SpendChannelRedeemerSchema>;

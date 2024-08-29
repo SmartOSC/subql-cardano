@@ -162,8 +162,6 @@ export class ApiService
   }
 
   async init(): Promise<ApiService> {
-    console.log("api init");
-    
     overrideConsoleWarn();
     let chainTypes: RegisteredTypes | undefined;
     let network: CardanoNetworkConfig;
@@ -192,7 +190,7 @@ export class ApiService
 
   updateBlockFetching(): void {
     // const onlyEventHandlers = isOnlyEventHandlers(this.project);
-    const onlyEventHandlers = false
+    const onlyEventHandlers = false;
     const skipTransactions =
       this.nodeConfig.skipTransactions && onlyEventHandlers;
 

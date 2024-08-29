@@ -1,7 +1,7 @@
-import {MerkleProofSchema} from '../../ics_023_vector_commitments/merkle/MerkleProof';
-import {HeightSchema} from '../../../client/ics_007_tendermint_client/height/Height';
-import {PacketSchema} from '../types/packet/Packet';
-import {Data} from '../../../plutus/data';
+import { MerkleProofSchema } from '../../ics_023_vector_commitments/merkle/MerkleProof';
+import { HeightSchema } from '../../../client/ics_007_tendermint_client/height/Height';
+import { PacketSchema } from '../types/packet/Packet';
+import { Data } from '../../../plutus/data';
 
 export const SpendChannelRedeemerSchema = Data.Enum([
   Data.Object({
@@ -40,15 +40,11 @@ export const SpendChannelRedeemerSchema = Data.Enum([
       proof_height: HeightSchema,
     }),
   }),
-  Data.Object({SendPacket: Data.Object({packet: PacketSchema})}),
-  Data.Literal('ChanCloseInit'),
-  Data.Object({
-    ChanCloseConfirm: Data.Object({
-      proof_init: MerkleProofSchema,
-      proof_height: HeightSchema,
-    }),
-  }),
+  Data.Object({ SendPacket: Data.Object({ packet: PacketSchema }) }),
   Data.Literal('RefreshUtxo'),
 ]);
-export type SpendChannelRedeemer = Data.Static<typeof SpendChannelRedeemerSchema>;
-export const SpendChannelRedeemer = SpendChannelRedeemerSchema as unknown as SpendChannelRedeemer;
+export type SpendChannelRedeemer = Data.Static<
+  typeof SpendChannelRedeemerSchema
+>;
+export const SpendChannelRedeemer =
+  SpendChannelRedeemerSchema as unknown as SpendChannelRedeemer;

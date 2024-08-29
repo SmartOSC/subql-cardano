@@ -451,11 +451,11 @@ export class FetchService
 
   runWorkerFetchChainPoint(startPoint?: IChainTipSchema) {
     setTimeout(() => {
-      Promise.all([this.cronJobCacheChainTipCardano(startPoint)]);
+      Promise.all([this.handlerGetAndCacheChainTipCardano(startPoint)]);
     }, 1000);
   }
 
-  async cronJobCacheChainTipCardano(
+  async handlerGetAndCacheChainTipCardano(
     startPointFromDs?: IChainTipSchema,
   ): Promise<void> {
     wokerLogger.info('Fetch Chain Point From Cardano Starting...');

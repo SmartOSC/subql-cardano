@@ -169,6 +169,7 @@ export abstract class DictionaryService<DS, FB> implements IDictionaryCtrl<DS, F
         throw new Error(`Bad response, code="${response.status}" body="${await response.text()}"`);
       }
       const dictionaryJson = await response.json();
+      if (!dictionaryJson[networkFamily.toLowerCase()]) return [];
 
       const dictionaries = dictionaryJson[networkFamily.toLowerCase()][chainId];
 

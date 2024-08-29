@@ -34,6 +34,7 @@ export class CardanoDictionaryService extends DictionaryService<
       this.project.network.chainId,
       this.nodeConfig.dictionaryRegistry,
     );
+    if (registryDictionaries.length === 0) return;
 
     logger.debug(`Dictionary registry endpoints: ${registryDictionaries}`);
 

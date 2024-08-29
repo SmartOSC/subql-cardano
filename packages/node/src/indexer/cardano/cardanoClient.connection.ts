@@ -16,7 +16,7 @@ import * as CardanoUtil from '../../utils/cardano';
 import { CardanoClient } from './CardanoClient';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const logger = getLogger('cosmos-client-connection');
+const logger = getLogger('cardano-client-connection');
 
 export type FetchFunc = typeof CardanoUtil.fetchBlocksBatches;
 // We use a function to get the fetch function because it can change depending on the skipTransactions feature
@@ -58,7 +58,7 @@ export class CardanoClientConnection
 
     connection.setMiniClient(miniClient);
 
-    logger.info(`[ApiService][CreateConnection] connected to ${endpoint}`);
+    logger.info(`connected to ${endpoint}`);
 
     return connection;
   }
