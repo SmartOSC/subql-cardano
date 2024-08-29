@@ -150,7 +150,7 @@ export interface ProjectNetworkConfig {
    *
    * @type {number}
    */
-  networkMagic: number;
+  networkMagic?: number;
 
   /**
    * The SubQuery network dictionary endpoint (optional).

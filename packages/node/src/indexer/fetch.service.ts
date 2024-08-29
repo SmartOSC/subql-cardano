@@ -463,6 +463,10 @@ export class FetchService
     try {
       // TODO: load tip from datasource
       const startPointInCached = await this.redisCaching.get('startPoint');
+      console.log({
+        startPointInCached
+      });
+      
       let chainTipStart: IChainTipSchema = {
         point: {
           blockHeader: {

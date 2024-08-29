@@ -89,7 +89,7 @@ export class ApiPromiseConnection
     provider.disconnect()
 
     // TODO: Load endpoint from datasource
-    const miniClient = new MiniProtocolClient(endpoint)
+    const miniClient = new MiniProtocolClient(endpoint, 42)
     const api = new CardanoClient(miniClient);
     return new ApiPromiseConnection(api, fetchBlocksBatches);
   }

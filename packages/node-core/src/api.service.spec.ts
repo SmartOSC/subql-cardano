@@ -10,7 +10,7 @@ import {ConnectionPoolService, ConnectionPoolStateManager} from './indexer';
 
 class TestApiService extends ApiService {
   retryConnection(
-    createConnection: (endpoint: string) => Promise<IApiConnectionSpecific>,
+    createConnection: (endpoint: string, networkMagic: number) => Promise<IApiConnectionSpecific>,
     network: ProjectNetworkConfig & {chainId: string},
     index: number,
     endpoint: string,
