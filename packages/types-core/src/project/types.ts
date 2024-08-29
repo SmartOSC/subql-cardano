@@ -146,6 +146,13 @@ export interface ProjectNetworkConfig {
   endpoint: string | string[];
 
   /**
+   * The network magic number, 
+   *
+   * @type {number}
+   */
+  networkMagic: number;
+
+  /**
    * The SubQuery network dictionary endpoint (optional).
    * This significantly speeds up indexing of your project.
    *
