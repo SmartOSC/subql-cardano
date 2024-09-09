@@ -622,8 +622,18 @@ async function saveCardanoTransfers(
   const packetData = map.get(EventAttributeChannel.AttributeKeyData);
   const packetDataObject = JSON.parse(packetData);
 
+  const voucherTokenRecvPrefix = getDenomPrefix(
+    map.get(EventAttributeChannel.AttributeKeyDstPort),
+    map.get(EventAttributeChannel.AttributeKeyDstChannel)
+  );
+
+  const prefixDenom = convertString2Hex(voucherTokenRecvPrefix + packetDataObject?.denom);
+  const voucherTokenName = hashSha3_256(prefixDenom);
+  const voucherTokenUnit = handler.validators.mintVoucher.scriptHash + voucherTokenName;
+
   let newCardanoTransfer = CardanoTransfer.create({
     id: txHash,
+    ibcTokenUnit: voucherTokenUnit,
     blockHeight: blockHeight,
     slot: slot,
     sender: packetDataObject?.sender,
@@ -637,6 +647,7 @@ async function saveCardanoTransfers(
     msgType: MsgType.SendPacket,
     amount: packetDataObject?.amount,
     denom: packetDataObject?.denom,
+    memo: packetDataObject?.memo,
   });
 
   if (eventType == EventType.RecvPacket) {
