@@ -131,7 +131,7 @@ export abstract class ApiService<
     endpoint: string,
     postConnectedHook?: (connection: Connection, endpoint: string, index: number) => void
   ): Promise<Connection> {
-    const connection = await createConnection(endpoint, network.networkMagic);
+    const connection = await createConnection(endpoint, network.networkMagic ?? 0);
 
     this.assertChainId(network, connection);
     if (!this._networkMeta) {
