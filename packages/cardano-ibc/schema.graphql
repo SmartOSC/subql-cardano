@@ -96,6 +96,7 @@ type InnerSpec @jsonField(indexed: false) {
 
 type CardanoTransfer @entity {
   id: ID!
+  ibcTokenUnit: String!
   blockHeight: BigInt!
   slot:BigInt!
   sender: String!
@@ -109,6 +110,7 @@ type CardanoTransfer @entity {
   msgType: MsgType!
   amount: String!
   denom: String!
+  memo: String
 }
 
 type EventAttribute @jsonField(indexed: false) {

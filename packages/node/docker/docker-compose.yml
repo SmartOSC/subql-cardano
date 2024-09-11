@@ -14,8 +14,6 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
-      timeout: 5s
-      retries: 5
       
   redis:
     image: redis:7.0-alpine
@@ -25,35 +23,39 @@ services:
     volumes:
       - .data/redis:/data
     
-  # subql-cardano:
-  #   image: cuonglv0297/subql-cardano:v1.0.0-non-mithril
-  #   depends_on:
-  #     "postgres":
-  #       condition: service_healthy
-  #   restart: always
-  #   environment:
-  #     DB_USER: postgres
-  #     DB_PASS: postgres
-  #     DB_DATABASE: postgres
-  #     DB_HOST: postgres
-  #     DB_PORT: 5432
+  subql-cardano:
+    # image: cuonglv0297/subql-cardano:v1.0.0-non-mithril
+    build:
+      context: ../../..
+      dockerfile: ./packages/node/Dockerfile
+      # dockerfile: ./
+    depends_on:
+      "postgres":
+        condition: service_healthy
+    restart: always
+    environment:
+      DB_USER: postgres
+      DB_PASS: postgres
+      DB_DATABASE: postgres
+      DB_HOST: postgres
+      DB_PORT: 5432
 
-  #     REDIS_HOST: redis
-  #     REDIS_PORT: 6379
-  #   volumes:
-  #     - ./data/app:/app
-  #   command:
-  #     - ${SUB_COMMAND:-} # set SUB_COMMAND env variable to "test" to run tests
-  #     - -f=/app
-  #     - --db-schema=app
-  #     - --workers=4
-  #     - --batch-size=30
-  #     - --unfinalized-blocks=true
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://subquery-node:3000/ready"]
-  #     interval: 3s
-  #     timeout: 5s
-  #     retries: 10
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    # volumes:
+    #   - ./data/app:/app
+    # command:
+    #   - ${SUB_COMMAND:-} # set SUB_COMMAND env variable to "test" to run tests
+    #   - -f=/app
+    #   - --db-schema=app
+    #   - --workers=4
+    #   - --batch-size=30
+    #   - --unfinalized-blocks=true
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://subquery-cardano:3000/ready"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
     
   graphql-engine:
     image: subquerynetwork/subql-query:latest
@@ -70,4 +72,4 @@ services:
     command:
       - --name=cardano-ibc
       - --playground
-      - --indexer=http://108.128.3.70:3001
+      - --indexer=http://subql-cardano:3001

@@ -10,10 +10,14 @@ COPY . .
 RUN yarn install && \
     yarn build
 
-RUN cd packages/node && \
-    yarn install
+RUN cd packages/cardano-ibc && \
+    yarn install && \
+    yarn codegen && yarn build
 
+# RUN cd packages/node
 # Set Entry point and command
-# ENTRYPOINT ["/sbin/tini", "--", "/bin/run"]
+# RUN cd packages/node && yarn start:dev
+ENTRYPOINT ["/bin/sh","-c","cd packages/node && yarn start:dev"]
+
 # ENTRYPOINT ["/bin/sh","-c","sleep infinity"]
-CMD ["yarn", "start:dev"]
+# CMD ["yarn", "start:dev"]
