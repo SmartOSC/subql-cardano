@@ -22,6 +22,7 @@ import {
   ProcessBlockResponse,
   BaseIndexerManager,
   IBlock,
+  getLogger,
 } from '@subql/node-core';
 import {
   LightCardanoEvent,
@@ -49,6 +50,7 @@ import { CardanoClient } from './cardano/CardanoClient';
 // import { MultiEraBlock as CardanoBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { CustomSandboxService } from './customSandbox.service';
 
+const logger = getLogger('indexer');
 @Injectable()
 export class IndexerManager extends BaseIndexerManager<
   CardanoClient,

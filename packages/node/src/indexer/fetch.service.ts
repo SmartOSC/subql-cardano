@@ -458,77 +458,94 @@ export class FetchService
   async handlerGetAndCacheChainTipCardano(
     startPointFromDs?: IChainTipSchema,
   ): Promise<void> {
-    wokerLogger.info('Fetch Chain Point From Cardano Starting...');
+    // wokerLogger.info('Fetch Chain Point From Cardano Starting...');
 
     try {
       // TODO: load tip from datasource
-      const startPointInCached = await this.redisCaching.get('startPoint');
-      let chainTipStart: IChainTipSchema = {
-        point: {
-          blockHeader: {
-            hash: startPointFromDs?.point.blockHeader?.hash ?? '',
-            slotNumber: startPointFromDs?.point.blockHeader?.slotNumber ?? '',
-          },
-        },
-        blockNo: startPointFromDs?.blockNo ?? '',
-      };
-      if (!startPointInCached) {
-        await this.redisCaching.set(
-          'startPoint',
-          JSON.stringify(chainTipStart),
-        );
-      }
-      if (startPointInCached) {
-        chainTipStart = JSON.parse(startPointInCached) as IChainTipSchema;
-      }
+      let chainTipStart: IChainTipSchema =
+        await this.getCurrentStartPoint(startPointFromDs);
 
-      while (true) {
-        wokerLogger.info('Check caching ...');
-        const cached = await this.redisCaching.get(
-          `smart:cache:block-${(BigInt(chainTipStart.blockNo) + 1n).toString()}`,
-        );
-        if (!cached) break;
-
-        chainTipStart = JSON.parse(cached) as unknown as IChainTipSchema;
-        await this.redisCaching.set('startPoint', cached);
-      }
-
-      wokerLogger.info('Fetch Next Point');
       const startPoint: IChainPoint = {
         blockHeader: {
           hash: fromHex(chainTipStart.point.blockHeader?.hash ?? ''),
           slotNumber: BigInt(chainTipStart.point.blockHeader?.slotNumber ?? 0),
         },
       };
-      const next = chainTipStart.blockNo
-        ? await this.apiService.api.requestNextFromStartPoint(startPoint)
-        : await this.apiService.api.requestNext();
 
-      chainTipStart = {
-        point: {
-          blockHeader: {
-            hash: toHex(next.point.blockHeader?.hash ?? new Uint8Array()),
-            slotNumber: next.point.blockHeader?.slotNumber.toString() ?? '',
+      // const MAX_SYNC_BATCH_SIZE = this.blockDispatcher.smartBatchSize;
+      const MAX_SYNC_BATCH_SIZE = 30;
+      const latestHeight = this._latestHeight();
+      const latestBlockRange = latestHeight - Number(chainTipStart.blockNo);
+      const scaleBatchSize =
+        latestBlockRange > MAX_SYNC_BATCH_SIZE
+          ? MAX_SYNC_BATCH_SIZE
+          : latestBlockRange;
+
+      const nexts = chainTipStart.blockNo
+        ? await this.apiService.api.requestNextPointFromStart(
+            startPoint,
+            scaleBatchSize,
+          )
+        : await this.apiService.api.requestNextPoint(scaleBatchSize);
+
+      for (const next of nexts) {
+        chainTipStart = {
+          point: {
+            blockHeader: {
+              hash: toHex(next.point.blockHeader?.hash ?? new Uint8Array()),
+              slotNumber: next.point.blockHeader?.slotNumber.toString() ?? '',
+            },
           },
-        },
-        blockNo: next.blockNo.toString(),
-      };
+          blockNo: next.blockNo.toString(),
+        };
 
-      const key = `smart:cache:block-${next.blockNo.toString()}`;
-      const value = JSON.stringify(chainTipStart);
+        const key = `smart:cache:block-${next.blockNo.toString()}`;
+        const value = JSON.stringify(chainTipStart);
 
-      await this.redisCaching.set<string>(key, value, {
-        ttl: 24 * 60 * 60, // 1 day
-      });
-      await this.redisCaching.set('startPoint', value);
+        await this.redisCaching.set<string>(key, value, {
+          ttl: 24 * 60 * 60, // 1 day
+        });
+        await this.redisCaching.set('startPoint', value);
 
-      wokerLogger.info(
-        `Fetch Chain Point From Cardano Height = ${next.blockNo.toString()} Successful!`,
-      );
+        // wokerLogger.info(
+        //   `Fetch Chain Point From Cardano Height = ${next.blockNo.toString()} Successful!`,
+        // );
+      }
     } catch (error) {
       wokerLogger.error(`Fetch Chain Point From Cardano ERR: ${error}`);
     }
 
     this.runWorkerFetchChainPoint();
+  }
+
+  async getCurrentStartPoint(
+    startPointFromDs?: IChainTipSchema,
+  ): Promise<IChainTipSchema> {
+    const startPointInCached = await this.redisCaching.get('startPoint');
+    let chainTipStart: IChainTipSchema = {
+      point: {
+        blockHeader: {
+          hash: startPointFromDs?.point.blockHeader?.hash ?? '',
+          slotNumber: startPointFromDs?.point.blockHeader?.slotNumber ?? '',
+        },
+      },
+      blockNo: startPointFromDs?.blockNo ?? '',
+    };
+
+    if (startPointInCached) {
+      chainTipStart = JSON.parse(startPointInCached) as IChainTipSchema;
+    }
+    while (true) {
+      // wokerLogger.info('Check caching ...');
+      const cached = await this.redisCaching.get(
+        `smart:cache:block-${(BigInt(chainTipStart.blockNo) + 1n).toString()}`,
+      );
+      if (!cached) break;
+
+      chainTipStart = JSON.parse(cached) as unknown as IChainTipSchema;
+    }
+    await this.redisCaching.set('startPoint', JSON.stringify(chainTipStart));
+
+    return chainTipStart;
   }
 }

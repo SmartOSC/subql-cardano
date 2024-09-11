@@ -1,8 +1,12 @@
-import { Header, IBlock } from '@subql/node-core';
 import {
-  BlockContent,
-  CardanoBlockContent,
-} from '../indexer/types';
+  backoffRetry,
+  getLogger,
+  Header,
+  IBlock,
+  isBackoffError,
+  timeout,
+} from '@subql/node-core';
+import { BlockContent, CardanoBlockContent } from '../indexer/types';
 import { CardanoClient } from '../indexer/cardano/CardanoClient';
 import { redis as redisClient, getChainTipByHeight } from './cache';
 import { sortBy } from 'lodash';
@@ -15,7 +19,15 @@ import {
 import { MultiEraBlock } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import { Block } from '@dcspark/cardano-multiplatform-lib-nodejs';
 import { toHex } from '../indexer/utils/hex';
-import { CardanoBlock, CardanoBlockFilter, CardanoCallFilter, CardanoExtrinsic } from '@subql/types';
+import {
+  CardanoBlock,
+  CardanoBlockFilter,
+  CardanoCallFilter,
+  CardanoExtrinsic,
+} from '@subql/types';
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+const logger = getLogger('CardanoUtil');
 
 export async function fetchBlocksBatches(
   api: CardanoClient,
@@ -44,7 +56,7 @@ export async function fetchBlocksBatches(
     //   });
     // }
     const blocks = await Promise.all(
-      blockArray.map((height) => getBlockByHeight(api, height)),
+      blockArray.map((height) => fetchBlockByHeight(api, height)),
     );
     return blocks
       .filter((block) => block instanceof BlockFetchBlock)
@@ -117,7 +129,7 @@ export async function fetchBlocksRange(
   const toChainTip = await getChainTipByHeight(endHeight);
   if (!fromChainTip || !toChainTip) return [];
 
-  const result = await api.getBlocksByRangePoint(
+  const result = await api.fetchBlocksByRangePoint(
     (fromChainTip as unknown as IChainTip).point,
     (toChainTip as unknown as IChainTip).point,
   );
@@ -153,7 +165,7 @@ export function filterExtrinsic(
   filter?: CardanoCallFilter,
 ): boolean {
   // TODO: for cardano
-  return true
+  return true;
   // if (!filter) return true;
   // return (
   //   (filter.specVersion === undefined ||
@@ -176,15 +188,36 @@ export function filterExtrinsic(
  * @param overallSpecVer exists if all blocks in the range have same parant specVersion
  */
 
-export async function getBlockByHeight(
+export async function fetchBlockByHeight(
   api: CardanoClient,
   height: number,
-): Promise<BlockFetchNoBlocks | BlockFetchBlock> {
-  const chainTip = await getChainTipByHeight(height);
-  if (!chainTip) return new BlockFetchNoBlocks();
+): Promise<BlockFetchBlock> {
+  return retryFetchBlockByHeight(async () => {
+    const chainTip = await getChainTipByHeight(height);
+    if (!chainTip) throw new Error(`Not found chain tip for height ${height}`);
 
-  const chainPoint = chainTip.point;
-  return api.getBlockByPoint(chainPoint);
+    const chainPoint = chainTip.point;
+    return timeout(
+      api.fetchBlockByPoint(chainPoint),
+      3,
+      `Fetch block by height ${chainTip.blockNo} timeout.`,
+    );
+  }, MAX_RECONNECT_ATTEMPTS);
+}
+
+async function retryFetchBlockByHeight(
+  fn: () => Promise<BlockFetchBlock>,
+  numAttempts = MAX_RECONNECT_ATTEMPTS,
+): Promise<BlockFetchBlock> {
+  try {
+    return await backoffRetry(fn, numAttempts);
+  } catch (e) {
+    if (isBackoffError(e)) {
+      logger.error(e.message);
+      throw e.lastError;
+    }
+    throw e;
+  }
 }
 
 export function calcInterval(api: CardanoClient): number {
@@ -209,4 +242,3 @@ export class LazyBlockContent implements CardanoBlockContent {
     return [];
   }
 }
-

@@ -1,7 +1,7 @@
 // Copyright 2020-2024 SubQuery Pte Ltd authors & contributors
 // SPDX-License-Identifier: GPL-3.0
 
-import { CardanoDataSource } from 'packages/common-cardano/src';
+import { CardanoDataSource } from '@subql/common-cardano';
 import {
   NodeConfig,
   DictionaryV2,

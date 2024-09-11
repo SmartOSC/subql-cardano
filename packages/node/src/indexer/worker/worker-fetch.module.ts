@@ -18,7 +18,6 @@ import {
 } from '@subql/node-core';
 import { SubqueryProject } from '../../configure/SubqueryProject';
 import { ApiService } from '../api.service';
-import { ApiPromiseConnection } from '../apiPromise.connection';
 import { DsProcessorService } from '../ds-processor.service';
 import { DynamicDsService } from '../dynamic-ds.service';
 import { IndexerManager } from '../indexer.manager';

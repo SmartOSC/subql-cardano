@@ -84,7 +84,7 @@ export abstract class ApiService<
 
   async createConnections(
     network: ProjectNetworkConfig & {chainId: string},
-    createConnection: (endpoint: string, networkMagic: number) => Promise<Connection>,
+    createConnection: (endpoint: string) => Promise<Connection>,
     /* Used to monitor the state of the connection */
     postConnectedHook?: (connection: Connection, endpoint: string, index: number) => void
   ): Promise<void> {
@@ -125,13 +125,13 @@ export abstract class ApiService<
   }
 
   private async performConnection(
-    createConnection: (endpoint: string, networkMagic: number) => Promise<Connection>,
+    createConnection: (endpoint: string) => Promise<Connection>,
     network: ProjectNetworkConfig & {chainId: string},
     index: number,
     endpoint: string,
     postConnectedHook?: (connection: Connection, endpoint: string, index: number) => void
   ): Promise<Connection> {
-    const connection = await createConnection(endpoint, network.networkMagic ?? 0);
+    const connection = await createConnection(endpoint);
 
     this.assertChainId(network, connection);
     if (!this._networkMeta) {
@@ -152,7 +152,7 @@ export abstract class ApiService<
   }
 
   retryConnection(
-    createConnection: (endpoint: string, networkMagic: number) => Promise<Connection>,
+    createConnection: (endpoint: string) => Promise<Connection>,
     network: ProjectNetworkConfig & {chainId: string},
     index: number,
     endpoint: string,

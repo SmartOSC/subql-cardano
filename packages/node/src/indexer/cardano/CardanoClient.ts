@@ -24,7 +24,6 @@ import {
 } from '@harmoniclabs/cbor';
 import { createHash32 } from '../utils/utils';
 import { Socket } from 'net';
-import { uniqueId } from 'lodash';
 import { redis } from '../../utils/cache';
 
 const logger = getLogger('CardanoClient');
@@ -85,7 +84,7 @@ export class CardanoClient {
     return this.getHeader();
   }
 
-  async getBlocksByRangePoint(
+  async fetchBlocksByRangePoint(
     fromChainPoint: IChainPoint,
     toChainPoint: IChainPoint,
   ): Promise<BlockFetchNoBlocks | BlockFetchBlock[]> {
@@ -106,14 +105,16 @@ export class CardanoClient {
     throw new Error('Get Blocks By Range Point Failed');
   }
 
-  async getBlockByPoint(
-    chainPoint: IChainPoint,
-  ): Promise<BlockFetchNoBlocks | BlockFetchBlock> {
-    const { blockFetchClient, socket } =
+  async fetchBlockByPoint(chainPoint: IChainPoint): Promise<BlockFetchBlock> {
+    let { blockFetchClient, socket } =
       await this.miniClient.connectBlockFetchClient();
     try {
       const block = await blockFetchClient.request(chainPoint);
-      return block;
+      if (block instanceof BlockFetchBlock) return block;
+
+      throw new Error(
+        `Not found block by chain point {hash=${chainPoint.blockHeader?.hash}, blockNum=${chainPoint.blockHeader?.slotNumber}}`,
+      );
     } catch (error) {
       logger.error('Get Blocks By Point ERR: ', error);
     } finally {
@@ -122,39 +123,47 @@ export class CardanoClient {
     throw new Error('Get Blocks By Point Failed');
   }
 
-  async requestNextFromStartPoint(point: IChainPoint): Promise<IChainTip> {
+  async requestNextPointFromStart(
+    point: IChainPoint,
+    batchSize: number,
+  ): Promise<IChainTip[]> {
     const { chainSyncClient, socket } =
       await this.miniClient.connectChainSyncClient();
     try {
       const intersect = await chainSyncClient.findIntersect([point]);
       const rollBackwards = await chainSyncClient.requestNext();
-      const rollForwards = await chainSyncClient.requestNext();
 
-      if (rollForwards instanceof ChainSyncRollForward) {
-        const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
-          const nextData = next.data as CborArray;
-          const nextHeader = nextData.array[1] as CborTag;
-          let nextHeaderBytes = (nextHeader.data as CborBytes).bytes;
-          const blockHeaderCbor = Cbor.parse(nextHeaderBytes) as CborArray;
-          const blockHeaderBody = blockHeaderCbor.array[0];
-          const blockHash = createHash32(nextHeaderBytes);
+      const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
+        const nextData = next.data as CborArray;
+        const nextHeader = nextData.array[1] as CborTag;
+        let nextHeaderBytes = (nextHeader.data as CborBytes).bytes;
+        const blockHeaderCbor = Cbor.parse(nextHeaderBytes) as CborArray;
+        const blockHeaderBody = blockHeaderCbor.array[0];
+        const blockHash = createHash32(nextHeaderBytes);
 
-          const blockHeaderBodyArray = (blockHeaderBody as CborArray).array;
-          const [blockNoCbor, blockSlotCbor] = blockHeaderBodyArray;
+        const blockHeaderBodyArray = (blockHeaderBody as CborArray).array;
+        const [blockNoCbor, blockSlotCbor] = blockHeaderBodyArray;
 
-          return {
-            point: {
-              blockHeader: {
-                hash: fromHex(blockHash),
-                slotNumber: (blockSlotCbor as CborUInt).num,
-              },
+        return {
+          point: {
+            blockHeader: {
+              hash: fromHex(blockHash),
+              slotNumber: (blockSlotCbor as CborUInt).num,
             },
-            blockNo: (blockNoCbor as CborUInt).num,
-          };
+          },
+          blockNo: (blockNoCbor as CborUInt).num,
         };
+      };
 
-        return extractChainPoint(rollForwards);
+      const results: IChainTip[] = [];
+      for (let i = 0; i < batchSize; i++) {
+        const rollForwards = await chainSyncClient.requestNext();
+        if (rollForwards instanceof ChainSyncRollForward) {
+          results.push(extractChainPoint(rollForwards));
+        }
       }
+
+      return results;
     } catch (error) {
       logger.error('Request Next From Start Point ERR: ', error);
     } finally {
@@ -163,21 +172,26 @@ export class CardanoClient {
     throw new Error('Request Next From Start Point failed: not found point');
   }
 
-  async requestNext(): Promise<IChainTip> {
+  async requestNextPoint(batchSize: number): Promise<IChainTip[]> {
     const { chainSyncClient, socket: chainSyncSocket } =
       await this.miniClient.connectChainSyncClient();
     try {
-      const { tip: chainTip } = await chainSyncClient.requestNext();
+      const results: IChainTip[] = [];
+      for (let i = 0; i < batchSize; i++) {
+        const { tip: chainTip } = await chainSyncClient.requestNext();
 
-      return {
-        point: {
-          blockHeader: {
-            hash: chainTip.point.blockHeader?.hash ?? new Uint8Array(),
-            slotNumber: chainTip.point.blockHeader?.slotNumber ?? 0,
+        results.push({
+          point: {
+            blockHeader: {
+              hash: chainTip.point.blockHeader?.hash ?? new Uint8Array(),
+              slotNumber: chainTip.point.blockHeader?.slotNumber ?? 0,
+            },
           },
-        },
-        blockNo: chainTip.blockNo,
-      };
+          blockNo: chainTip.blockNo,
+        });
+      }
+
+      return results;
     } catch (error) {
       logger.error('Request Next ERR: ', error);
     } finally {

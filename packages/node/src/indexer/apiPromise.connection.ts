@@ -17,7 +17,12 @@ import {
   IBlock,
 } from '@subql/node-core';
 import * as CardanoUtil from '../utils/cardano';
-import { ApiAt, BlockContent, CardanoBlockContent, LightBlockContent } from './types';
+import {
+  ApiAt,
+  BlockContent,
+  CardanoBlockContent,
+  LightBlockContent,
+} from './types';
 import { createCachedProvider } from './x-provider/cachedProvider';
 import { HttpProvider } from './x-provider/http';
 import { CardanoSafeClient } from './cardano/cardanoClient.connection';
@@ -29,8 +34,7 @@ const { version: packageVersion } = require('../../package.json');
 
 const RETRY_DELAY = 2_500;
 
-export type FetchFunc =
-  typeof CardanoUtil.fetchBlocksBatches
+export type FetchFunc = typeof CardanoUtil.fetchBlocksBatches;
 
 // We use a function to get the fetch function because it can change depending on the skipTransactions feature
 export type GetFetchFunc = () => FetchFunc;
@@ -38,8 +42,8 @@ export type GetFetchFunc = () => FetchFunc;
 export class ApiPromiseConnection
   implements
     IApiConnectionSpecific<
-    CardanoClient,
-    CardanoSafeClient,
+      CardanoClient,
+      CardanoSafeClient,
       IBlock<CardanoBlockContent>[]
     >
 {
@@ -50,9 +54,9 @@ export class ApiPromiseConnection
     private fetchBlocksBatches: GetFetchFunc,
   ) {
     this.networkMeta = {
-      chain: "cardano",
-      specName: "",
-      genesisHash: "",
+      chain: 'cardano',
+      specName: '',
+      genesisHash: '',
     };
   }
 
@@ -86,7 +90,7 @@ export class ApiPromiseConnection
       ...args.chainTypes,
     };
 
-    provider.disconnect()
+    provider.disconnect();
 
     // TODO: Load endpoint from datasource
     const miniClient = new MiniProtocolClient(endpoint, 42)
@@ -102,10 +106,7 @@ export class ApiPromiseConnection
     heights: number[],
     overallSpecVer?: number,
   ): Promise<IBlock<CardanoBlockContent>[]> {
-    const blocks = await this.fetchBlocksBatches()(
-      this.unsafeApi,
-      heights,
-    );
+    const blocks = await this.fetchBlocksBatches()(this.unsafeApi, heights);
     return blocks;
   }
 
