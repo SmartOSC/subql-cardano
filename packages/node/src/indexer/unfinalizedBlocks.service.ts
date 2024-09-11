@@ -47,7 +47,8 @@ export class UnfinalizedBlocksService extends BaseUnfinalizedBlocksService<
     if (!existedStartBlockHeight) return null as unknown as Header;
     const chainPoint = existedStartBlockHeight.point;
 
-    const blockFetched = await this.apiService.api.getBlockByPoint(chainPoint);
+    const blockFetched =
+      await this.apiService.api.fetchBlockByPoint(chainPoint);
     let parentHashHeader: string | undefined;
     if (blockFetched instanceof BlockFetchBlock) {
       const blockBytes = blockFetched.getBlockBytes();

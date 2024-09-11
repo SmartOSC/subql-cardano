@@ -20,7 +20,6 @@ import {
 } from '@subql/node-core';
 import { SubqueryProject } from '../configure/SubqueryProject';
 import { ApiService } from './api.service';
-import { ApiPromiseConnection } from './apiPromise.connection';
 import {
   BlockDispatcherService,
   WorkerBlockDispatcherService,
@@ -35,6 +34,7 @@ import { RuntimeService } from './runtime/runtimeService';
 import { UnfinalizedBlocksService } from './unfinalizedBlocks.service';
 import { RedisCachingModule } from '../caching/redis-caching.module';
 import { CustomSandboxService } from './customSandbox.service';
+import { CardanoClientConnection } from './cardano/cardanoClient.connection';
 
 @Module({
   imports: [RedisCachingModule],
@@ -62,7 +62,7 @@ import { CustomSandboxService } from './customSandbox.service';
         project: SubqueryProject,
         dynamicDsService: DynamicDsService,
         unfinalizedBlocks: UnfinalizedBlocksService,
-        connectionPoolState: ConnectionPoolStateManager<ApiPromiseConnection>,
+        connectionPoolState: ConnectionPoolStateManager<CardanoClientConnection>,
         monitorService?: MonitorService,
       ) =>
         nodeConfig.workers

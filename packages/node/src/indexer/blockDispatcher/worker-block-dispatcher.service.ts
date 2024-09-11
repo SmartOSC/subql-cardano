@@ -20,12 +20,12 @@ import {
 } from '@subql/node-core';
 import { CardanoBlock, CardanoDatasource } from '@subql/types';
 import { SubqueryProject } from '../../configure/SubqueryProject';
-import { ApiPromiseConnection } from '../apiPromise.connection';
 import { DynamicDsService } from '../dynamic-ds.service';
 import { RuntimeService } from '../runtime/runtimeService';
 import { BlockContent } from '../types';
 import { UnfinalizedBlocksService } from '../unfinalizedBlocks.service';
 import { IIndexerWorker } from '../worker/worker';
+import { CardanoClientConnection } from '../cardano/cardanoClient.connection';
 
 type IndexerWorker = IIndexerWorker & {
   terminate: () => Promise<number>;
@@ -33,11 +33,7 @@ type IndexerWorker = IIndexerWorker & {
 
 @Injectable()
 export class WorkerBlockDispatcherService
-  extends WorkerBlockDispatcher<
-    CardanoDatasource,
-    IndexerWorker,
-    CardanoBlock
-  >
+  extends WorkerBlockDispatcher<CardanoDatasource, IndexerWorker, CardanoBlock>
   implements OnApplicationShutdown
 {
   private _runtimeService?: RuntimeService;
@@ -56,7 +52,7 @@ export class WorkerBlockDispatcherService
     @Inject('ISubqueryProject') project: SubqueryProject,
     dynamicDsService: DynamicDsService,
     unfinalizedBlocksService: UnfinalizedBlocksService,
-    connectionPoolState: ConnectionPoolStateManager<ApiPromiseConnection>,
+    connectionPoolState: ConnectionPoolStateManager<CardanoClientConnection>,
     monitorService?: MonitorServiceInterface,
   ) {
     super(
@@ -71,7 +67,7 @@ export class WorkerBlockDispatcherService
       () =>
         createIndexerWorkerCore<
           IIndexerWorker,
-          ApiPromiseConnection,
+          CardanoClientConnection,
           BlockContent,
           CardanoDatasource
         >(

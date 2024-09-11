@@ -61,8 +61,9 @@ export type MinConfig = Partial<Omit<IConfig, 'subquery'>> & Pick<IConfig, 'subq
 
 const DEFAULT_CONFIG = {
   logLevel: 'info',
-  batchSize: 10,
-  timeout: 9000,
+  batchSize: 20,
+  // workers: 3,
+  timeout: 900,
   blockTime: 6000,
   preferRange: false,
   debug: undefined,
@@ -73,7 +74,7 @@ const DEFAULT_CONFIG = {
   dictionaryQuerySize: 10000,
   profiler: false,
   subscription: false,
-  disableHistorical: false,
+  disableHistorical: true,
   multiChain: false,
   unfinalizedBlocks: false,
   storeCacheThreshold: 1000,

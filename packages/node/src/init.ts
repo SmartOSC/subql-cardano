@@ -14,8 +14,6 @@ import { ApiService } from './indexer/api.service';
 import { FetchService } from './indexer/fetch.service';
 import { ProjectService } from './indexer/project.service';
 import { yargsOptions } from './yargs';
-import { WorkerService } from './indexer/worker/worker.service';
-import { sleep } from './indexer/utils/utils';
 
 const pjson = require('../package.json');
 
@@ -57,7 +55,7 @@ export async function bootstrap(): Promise<void> {
 
     const startPoint = projectService.getStartChainPointFromDataSources();
     fetchService.runWorkerFetchChainPoint(startPoint);
-    await fetchService.init(projectService.startHeight+1);
+    await fetchService.init(projectService.startHeight + 1);
 
     app.enableShutdownHooks();
 

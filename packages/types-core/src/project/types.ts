@@ -146,7 +146,7 @@ export interface ProjectNetworkConfig {
   endpoint: string | string[];
 
   /**
-   * The network magic number, 
+   * The network magic number,
    *
    * @type {number}
    */
