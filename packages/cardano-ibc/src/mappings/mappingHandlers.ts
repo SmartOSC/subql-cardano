@@ -700,7 +700,8 @@ async function saveMessage(
     receiver: packetDataObject?.receiver,
     msgType: eventType,
     packetId: packetUnit,
-  })
+    time: 1,
+  }) 
 
   await newMessage.save()
 }

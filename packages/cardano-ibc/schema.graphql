@@ -47,53 +47,6 @@ enum MsgType {
   AcknowledgePacket
 }
 
-type ChannelCounterparty @jsonField(indexed: false) {
-  portId: String!
-  channelId: String! 
-}
-
-type ConnectionCounterparty @jsonField(indexed: false) {
-  clientId: String!
-  connectionId: String!
-  prefix: String!
-}
-
-type ClientUncheckedRational @jsonField(indexed: false) {
-  numerator: BigInt!
-  denominator: BigInt!
-}
-
-type Height @jsonField(indexed: false) {
-  revisionNumber: BigInt!
-  revisionHeight: BigInt!
-}
-
-type LeafOpSchema @jsonField(indexed: false) {
-  hash: BigInt!
-  prehashKey: BigInt!
-  prehashValue: BigInt!
-  length: BigInt!
-  prefix: String!
-}
-
-
-type ProofSpec @jsonField(indexed: false) {
-  leafSpec: LeafOpSchema!
-  innerSpec: InnerSpec!
-  maxDepth: BigInt!
-  minDepth: BigInt!
-  prehashKeyBeforeComparison: Boolean!
-}
-
-type InnerSpec @jsonField(indexed: false) {
-  childOrder: [BigInt]
-  childSize: BigInt!
-  minPrefixLength: BigInt!
-  maxPrefixLength: BigInt!
-  emptyChild: String!
-  hash: BigInt!
-}
-
 type CardanoTransfer @entity {
   id: ID!
   ibcTokenUnit: String!
@@ -138,16 +91,13 @@ type Message @entity {
   msgType: MsgType!
   packet: Packet!
   msgError: String
+  gas: BigInt,
+  time: BigInt!,
 }
 
 type EventAttribute @jsonField(indexed: false) {
   key: String!
   value: String
-}
-
-type ConnectionVersion @jsonField(indexed: false) {
-  identifier: String!
-  features: [String]
 }
 
 type Event @entity {
@@ -162,6 +112,7 @@ type Client @entity {
   id: ID! # {chain_id}_{client_id}
   chainId: String!
   clientId: String!
+  height: String!
   counterpartyChainId: String!
 }
 
