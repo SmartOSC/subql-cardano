@@ -26,9 +26,7 @@ import {LightCardanoEvent, CardanoBlock, CardanoEvent, CardanoExtrinsic} from '.
 export type RuntimeDatasourceTemplate = BaseTemplateDataSource<CardanoDatasource>;
 export type CustomDatasourceTemplate = BaseTemplateDataSource<CardanoCustomDatasource>;
 
-export type CardanoProjectManifestV1_0_0 = ProjectManifestV1_0_0<
-  CardanoRuntimeDatasource | CardanoCustomDatasource
->;
+export type CardanoProjectManifestV1_0_0 = ProjectManifestV1_0_0<CardanoRuntimeDatasource | CardanoCustomDatasource>;
 
 /**
  * Kind of Cardano datasource.
@@ -191,9 +189,7 @@ export interface CardanoCustomHandler<K extends string = string, F = Record<stri
  * Represents a runtime handler for Cardano, which can be a block handler, call handler, or event handler.
  * @type {CardanoBlockHandler | CardanoCallHandler}
  */
-export type CardanoRuntimeHandler =
-  | CardanoBlockHandler
-  | CardanoCallHandler;
+export type CardanoRuntimeHandler = CardanoBlockHandler | CardanoCallHandler;
 
 /**
  * Represents a handler for Cardano, which can be a runtime handler or a custom handler with unknown filter type.
@@ -356,6 +352,27 @@ export type CardanoNetworkConfig = IProjectNetworkConfig & {
    * @type {FileReference}
    */
   chaintypes?: FileReference; // Align with previous field name
+
+  /**
+   * The network magic number,
+   *
+   * @type {number}
+   */
+  networkMagic?: number;
+
+  /**
+   * The system start time in milliseconds
+   *
+   * @type {number}
+   */
+  systemStartTime: number;
+
+  /**
+   * The slot length
+   *
+   * @type {number}
+   */
+  slotLength: number;
 };
 
 /**

@@ -29,7 +29,7 @@ import {
   exitWithError,
 } from '@subql/node-core';
 import { CardanoNetworkConfig } from '@subql/types';
-import { SubstrateNodeConfig } from '../configure/NodeConfig';
+import { CardanoNodeConfig } from '../configure/NodeConfig';
 import { SubqueryProject } from '../configure/SubqueryProject';
 // import { isOnlyEventHandlers } from '../utils/project';
 import * as CardanoUtil from '../utils/cardano';
@@ -120,7 +120,7 @@ export class ApiService
   private _currentBlockHash?: string;
   private _currentBlockNumber?: number;
 
-  private nodeConfig: SubstrateNodeConfig;
+  private nodeConfig: CardanoNodeConfig;
 
   constructor(
     @Inject('ISubqueryProject') private project: SubqueryProject,
@@ -129,7 +129,7 @@ export class ApiService
     nodeConfig: NodeConfig,
   ) {
     super(connectionPoolService, eventEmitter);
-    this.nodeConfig = new SubstrateNodeConfig(nodeConfig);
+    this.nodeConfig = new CardanoNodeConfig(nodeConfig);
 
     this.updateBlockFetching();
   }

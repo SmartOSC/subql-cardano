@@ -151,6 +151,7 @@ export class CustomSandboxService extends SandboxService<
     processor.setGlobal('generateTokenName', generateTokenName);
     processor.setGlobal('getIdFromTokenAssets', getIdFromTokenAssets);
     processor.setGlobal('hashSha3_256', hashSha3_256);
+    processor.setGlobal('getProjectNetwork', this._project.network);
     return processor;
   }
 

@@ -3,11 +3,11 @@
 
 import { IConfig, NodeConfig } from '@subql/node-core';
 
-export interface ISubstrateConfig extends IConfig {
+export interface ICardanoConfig extends IConfig {
   skipTransactions: boolean;
 }
 
-export class SubstrateNodeConfig extends NodeConfig<ISubstrateConfig> {
+export class CardanoNodeConfig extends NodeConfig<ICardanoConfig> {
   /**
    * This is a wrapper around the core NodeConfig to get additional properties that are provided through args or node runner options
    * NOTE: This isn't injected anywhere so you need to wrap the injected node config
@@ -16,7 +16,7 @@ export class SubstrateNodeConfig extends NodeConfig<ISubstrateConfig> {
    * constructor(
    *   nodeConfig: NodeConfig,
    * ) {
-   *   this.nodeConfig = new SubstrateNodeConfig(nodeConfig);
+   *   this.nodeConfig = new CardanoNodeConfig(nodeConfig);
    * }
    * */
   constructor(config: NodeConfig) {

@@ -12,7 +12,7 @@ import {BaseDataSource, BaseTemplateDataSource, ParentProject, RunnerSpecs} from
 export interface CommonSubqueryProject<
   N extends IProjectNetworkConfig = IProjectNetworkConfig,
   DS extends BaseDataSource = BaseDataSource,
-  T extends BaseTemplateDataSource<DS> = BaseTemplateDataSource<DS>
+  T extends BaseTemplateDataSource<DS> = BaseTemplateDataSource<DS>,
 > {
   /**
    * The repository of your SubQuery project.
@@ -144,13 +144,6 @@ export interface ProjectNetworkConfig {
    * @type {string | string[]}
    */
   endpoint: string | string[];
-
-  /**
-   * The network magic number,
-   *
-   * @type {number}
-   */
-  networkMagic?: number;
 
   /**
    * The SubQuery network dictionary endpoint (optional).
