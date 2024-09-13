@@ -33,6 +33,7 @@ import {
   ChannelStateType,
   CardanoTransfer,
   MsgType,
+  Packet
 } from '../types';
 import {EventAttributeChannel, EventAttributeConnection, EventAttributeClient} from '../constants/eventAttributes';
 import {fromHex} from '@harmoniclabs/uint8array-utils';
@@ -41,7 +42,7 @@ import {Header, HeaderSchema} from '../ibc-types/client/ics_007_tendermint_clien
 import {Data} from '../ibc-types/plutus/data';
 import {convertHex2String, convertString2Hex, hexToBytes} from '../utils/hex';
 import {getDenomPrefix} from '../utils/helper';
-import {Connection} from '../types/models';
+import {Connection, Message} from '../types/models';
 
 export async function handleCardanoBlock(cborHex: string): Promise<void> {
   logger.info(`Handling an incoming block on Cardano starting`);
@@ -163,47 +164,16 @@ async function handleParseClientEvents(
         },
       ],
     });
-    const proofSpecs = clientDatum.state.client_state.proof_specs.map((proof) => ({
-      leafSpec: {
-        hash: proof.leaf_spec.hash,
-        prehashKey: proof.leaf_spec.prehash_key,
-        prehashValue: proof.leaf_spec.prehash_value,
-        length: proof.leaf_spec.length,
-        prefix: proof.leaf_spec.prefix,
-      },
-      innerSpec: {
-        childOrder: proof.inner_spec.child_order,
-        childSize: proof.inner_spec.child_size,
-        minPrefixLength: proof.inner_spec.min_prefix_length,
-        maxPrefixLength: proof.inner_spec.max_prefix_length,
-        emptyChild: proof.inner_spec.empty_child,
-        hash: proof.inner_spec.hash,
-      },
-      maxDepth: proof.max_depth,
-      minDepth: proof.min_depth,
-      prehashKeyBeforeComparison: proof.prehash_key_before_comparison,
-    }));
 
     const clientSequence = getIdFromTokenAssets(txOutput.assets, handler.handlerAuthToken, CLIENT_PREFIX);
+    const clientId = `${CLIENT_ID_PREFIX}-${clientSequence}`
+    const chainId = "42" // TODO: get config
     const client = Client.create({
-      id: `${CLIENT_ID_PREFIX}-${clientSequence}`,
-      chainId: convertHex2String(clientDatum.state.client_state.chain_id),
-      trustLevel: {
-        numerator: clientDatum.state.client_state.trust_level.numerator,
-        denominator: clientDatum.state.client_state.trust_level.denominator,
-      },
-      trustingPeriod: clientDatum.state.client_state.trusting_period,
-      unbondingPeriod: clientDatum.state.client_state.unbonding_period,
-      maxClockDrift: clientDatum.state.client_state.max_clock_drift,
-      frozenHeight: {
-        revisionNumber: clientDatum.state.client_state.frozen_height.revision_number,
-        revisionHeight: clientDatum.state.client_state.frozen_height.revision_height,
-      },
-      latestHeight: {
-        revisionNumber: clientDatum.state.client_state.latest_height.revision_number,
-        revisionHeight: clientDatum.state.client_state.latest_height.revision_height,
-      },
-      proofSpecs: proofSpecs,
+      id: `${chainId}_${clientId}`,
+      height: blockHeight,
+      chainId: chainId,
+      clientId: clientId,
+      counterpartyChainId: convertHex2String(clientDatum.state.client_state.chain_id),
     });
     await client.save();
     await event.save();
@@ -317,6 +287,8 @@ async function handleParseChannelEvents(
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
         await saveCardanoIBCAssets(eventType, eventAttributes);
         await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
+        // await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
+        // await saveMessage(eventType, txOutput.hash, blockHeight, slot, eventAttributes );
       }
       if (spendChannelRedeemer.valueOf().hasOwnProperty('TimeoutPacket')) {
         eventType = EventType.TimeoutPacket;
@@ -326,11 +298,16 @@ async function handleParseChannelEvents(
         eventType = EventType.AcknowledgePacket;
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
         await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
+        await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes)
+        await saveMessage(eventType, txOutput.hash, blockHeight, slot, eventAttributes );
       }
       if (spendChannelRedeemer.valueOf().hasOwnProperty('SendPacket')) {
         eventType = EventType.SendPacket;
+        // const packetData = getPacketData(spendChannelRedeemer)
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
         await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
+        await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
+        await saveMessage(eventType, txOutput.hash, blockHeight, slot, eventAttributes );
       }
       if (eventType == EventType.ChannelOpenInit) return;
     }
@@ -419,7 +396,7 @@ function extractPacketEventAttributes(
   channelDatum: ChannelDatum,
   channelRedeemer: SpendChannelRedeemer
 ): EventAttribute[] {
-  let packetData: Packet;
+  let packetData: PacketSchema;
   let acknowledgement = '';
   if (channelRedeemer.hasOwnProperty('RecvPacket')) packetData = channelRedeemer['RecvPacket']?.packet as unknown;
   if (channelRedeemer.hasOwnProperty('SendPacket')) packetData = channelRedeemer['SendPacket']?.packet as unknown;
@@ -544,38 +521,21 @@ async function saveChannel(eventType: EventType, eventAttribute: EventAttribute[
   eventAttribute.forEach((item) => {
     map.set(item.key, item.value);
   });
+  const chainId = "42" //TODO: get from config
+  
+  const connectionUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeyConnectionID)}`
+  const connection = await Connection.get(connectionUnit)
 
   let channel = Channel.create({
-    id: map.get(EventAttributeChannel.AttributeKeyChannelID),
-    state: ChannelStateType.Uninitialized,
-    ordering: channelDatum.state.channel.ordering,
+    id: `${chainId}_${map.get(EventAttributeChannel.AttributeKeyPortID)}_${map.get(EventAttributeChannel.AttributeKeyChannelID)}`,
+    chainId: chainId,
     portId: map.get(EventAttributeChannel.AttributeKeyPortID),
-    counterparty: {
-      portId: map.get(EventAttributeChannel.AttributeCounterpartyPortID),
-      channel: map.get(EventAttributeChannel.AttributeCounterpartyChannelID),
-    },
-    connectionHops: map.get(EventAttributeChannel.AttributeKeyConnectionID),
-    version: map.get(EventAttributeChannel.AttributeVersion),
+    channelId: map.get(EventAttributeChannel.AttributeKeyChannelID),
+    connectionId: connectionUnit,
+    counterpartyPortId: map.get(EventAttributeChannel.AttributeCounterpartyPortID),
+    counterpartyChannelId: map.get(EventAttributeChannel.AttributeCounterpartyChannelID),
+    counterpartyChainId: connection?.counterpartyChainId
   });
-
-  if (eventType == EventType.ChannelOpenInit) {
-    channel.state = ChannelStateType.Init;
-  }
-  if (eventType == EventType.ChannelOpenTry) {
-    channel.state = ChannelStateType.TryOpen;
-  }
-  if (eventType == EventType.ChannelOpenAck) {
-    channel.state = ChannelStateType.Open;
-  }
-  if (eventType == EventType.ChannelOpenConfirm) {
-    channel.state = ChannelStateType.Open;
-  }
-  if (eventType == EventType.ChannelCloseInit) {
-    channel.state = ChannelStateType.Closed;
-  }
-  if (eventType == EventType.ChannelCloseConfirm) {
-    channel.state = ChannelStateType.Closed;
-  }
   await channel.save();
 }
 
@@ -591,17 +551,17 @@ async function saveConnection(eventType: EventType, connDatum: ConnectionDatum, 
     features: version.features.map((features) => convertHex2String(features)),
   }));
 
+  const chainId  = "42" // TODO: get from config
+  const clientUnit = `${chainId}_${map.get(EventAttributeConnection.AttributeKeyClientID)}`
+  const client =  await Client.get(clientUnit)
   let connection = Connection.create({
-    id: map.get(EventAttributeConnection.AttributeKeyConnectionID),
-    clientId: map.get(EventAttributeConnection.AttributeKeyClientID),
-    state: connDatum.state.state,
-    versions: versions,
-    counterparty: {
-      clientId: map.get(EventAttributeConnection.AttributeKeyCounterpartyClientID),
-      connectionId: map.get(EventAttributeConnection.AttributeKeyCounterpartyConnectionID),
-      prefix: connDatum.state.counterparty.prefix,
-    },
-    delayPeriod: connDatum.state.delay_period,
+    id: `${chainId}_${map.get(EventAttributeConnection.AttributeKeyConnectionID)}`,
+    chainId: chainId,
+    connectionId: map.get(EventAttributeConnection.AttributeKeyConnectionID),
+    clientId: clientUnit,
+    counterpartyChainId: client?.counterpartyChainId,
+    counterpartyClientId: map.get(EventAttributeConnection.AttributeKeyCounterpartyClientID),
+    counterpartyConnectionId: map.get(EventAttributeConnection.AttributeKeyCounterpartyConnectionID),
   });
 
   await connection.save();
@@ -658,6 +618,91 @@ async function saveCardanoTransfers(
   }
 
   await newCardanoTransfer.save();
+}
+
+function getPacketData(
+  channelRedeemer: SpendChannelRedeemer
+): string {
+  let packetData: PacketSchema;
+  if (channelRedeemer.hasOwnProperty('RecvPacket')) packetData = channelRedeemer['RecvPacket']?.packet as unknown;
+  if (channelRedeemer.hasOwnProperty('SendPacket')) packetData = channelRedeemer['SendPacket']?.packet as unknown;
+  if (channelRedeemer.hasOwnProperty('AcknowledgePacket')) {
+    packetData = channelRedeemer['AcknowledgePacket']?.packet as unknown;
+    acknowledgement = channelRedeemer['AcknowledgePacket']?.acknowledgement;
+  }
+  if (channelRedeemer.hasOwnProperty('TimeoutPacket')) packetData = channelRedeemer['TimeoutPacket']?.packet as unknown;
+  return packetData?.data
+}
+
+async function savePacket(
+  eventType: EventType,
+  txHash: String,
+  blockHeight: BigInt,
+  slot: BigInt,
+  eventAttribute: EventAttribute[],
+) {
+  let map = new Map<string, string>();
+
+  eventAttribute.forEach((item) => {
+    map.set(item.key, item.value);
+  });
+  const packetData = map.get(EventAttributeChannel.AttributeKeyData);
+  const packetDataObject = JSON.parse(packetData);
+
+  const srcChainId = '42' // TODO: get from config
+  const packetId = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`
+
+  const channelUnit = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}`
+
+  const channel = await Channel.get(channelUnit)
+
+  const newPacket = Packet.create({
+    id: packetId,
+    sequence: map.get(EventAttributeChannel.AttributeKeySequence),
+    srcChain: srcChainId,
+    srcPort: map.get(EventAttributeChannel.AttributeKeySrcPort),
+    srcChannel: map.get(EventAttributeChannel.AttributeKeySrcChannel),
+    dstChain: channel?.counterpartyChainId,
+    dstPort: map.get(EventAttributeChannel.AttributeKeyDstPort),
+    dstChannel: map.get(EventAttributeChannel.AttributeKeyDstChannel),
+    data: packetData,
+  })
+
+  await newPacket.save()
+}
+
+
+async function saveMessage(
+  eventType: EventType,
+  txHash: String,
+  blockHeight: BigInt,
+  slot: BigInt,
+  eventAttribute: EventAttribute[],
+) {
+  let map = new Map<string, string>();
+
+  eventAttribute.forEach((item) => {
+    map.set(item.key, item.value);
+  });
+  const packetData = map.get(EventAttributeChannel.AttributeKeyData);
+  const packetDataObject = JSON.parse(packetData);
+
+  const chainId = '42' //TODO: get from config
+  const messageId = `${chainId}_${txHash}_0_${eventType}`
+  const packetUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`
+
+  const newMessage = Message.create({
+    id: messageId,
+    chainId: chainId,
+    msgIdx: 0,
+    txHash: txHash,
+    sender: packetDataObject?.sender,
+    receiver: packetDataObject?.receiver,
+    msgType: eventType,
+    packetId: packetUnit,
+  })
+
+  await newMessage.save()
 }
 
 function getDenomBase(denom: string): string {

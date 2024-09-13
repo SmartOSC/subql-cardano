@@ -113,6 +113,33 @@ type CardanoTransfer @entity {
   memo: String
 }
 
+type Packet @entity {
+  id: ID! # {src_chain_}_{src_port_id}_{src_channel_id}_{sequence}
+  sequence: String!
+  srcChain: String!
+  srcPort: String!
+  srcChannel: String!
+  dstChain: String!
+  dstPort: String!
+  dstChannel: String!
+  data:String,
+  module: String,
+  parentPacket: Packet,
+}
+
+type Message @entity {
+  id: ID! # {chain_id}_{tx_hash}_{msg_idx}_{msg_type}
+  chainId: String!
+  msgIdx: BigInt
+  code: BigInt
+  txHash: String!
+  sender: String
+  receiver: String
+  msgType: MsgType!
+  packet: Packet!
+  msgError: String
+}
+
 type EventAttribute @jsonField(indexed: false) {
   key: String!
   value: String
@@ -132,35 +159,31 @@ type Event @entity {
 }
 
 type Client @entity {
-  id: ID!
+  id: ID! # {chain_id}_{client_id}
   chainId: String!
-  trustLevel: ClientUncheckedRational!
-  trustingPeriod: BigInt!
-  unbondingPeriod: BigInt!
-  maxClockDrift: BigInt!
-  frozenHeight: Height!
-  latestHeight: Height!
-  proofSpecs: [ProofSpec]!
-
+  clientId: String!
+  counterpartyChainId: String!
 }
 
 type Connection @entity {
-  id: ID!
-  clientId: String!
-  versions: [ConnectionVersion]!
-  state: String!
-  counterparty: ConnectionCounterparty!
-  delayPeriod: String! 
+  id: ID! # {chain_id}_{connection_id}
+  chainId: String!
+  connectionId: String!
+  client: Client!
+  counterpartyChainId: String!
+  counterpartyClientId: String!
+  counterpartyConnectionId: String!
 }
 
 type Channel @entity {
-  id: ID!
-  state: ChannelStateType!
-  ordering: ChannelOrderType!
+  id: ID! # {chain_id}_{port_id}_{channel_id}
+  chainId: String!
   portId: String!
-  counterparty: ChannelCounterparty!
-  connectionHops: String!
-  version: String
+  channelId: String!
+  connection: Connection!
+  counterpartyPortId: String!
+  counterpartyChannelId: String!
+  counterpartyChainId: String!
 }
 
 type CardanoIbcAsset @entity {
