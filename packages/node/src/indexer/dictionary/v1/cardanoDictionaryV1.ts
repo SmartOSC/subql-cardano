@@ -8,12 +8,12 @@ import {
   isRuntimeDs,
   CardanoCallFilter,
   CardanoCustomHandler,
-  CardanoDataSource, 
+  CardanoDataSource,
   CardanoEventFilter,
   CardanoHandler,
   CardanoHandlerKind,
   CardanoRuntimeHandlerFilter,
-} from 'packages/common-cardano/src';
+} from '@subql/common-cardano';
 import { NodeConfig, DictionaryV1, timeout, getLogger } from '@subql/node-core';
 import { CardanoBlockFilter, CardanoDatasource } from '@subql/types';
 import {

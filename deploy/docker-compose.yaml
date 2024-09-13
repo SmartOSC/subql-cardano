@@ -41,8 +41,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
 
-    # volumes:
-    #   - ./:/app
+    volumes:
+      - ./packages/cardano-ibc:/app/packages/cardano-ibc
     command:
       - ${SUB_COMMAND:-} # set SUB_COMMAND env variable to "test" to run tests
       - -f=/app

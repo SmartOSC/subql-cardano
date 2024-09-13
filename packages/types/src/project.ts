@@ -365,14 +365,14 @@ export type CardanoNetworkConfig = IProjectNetworkConfig & {
    *
    * @type {number}
    */
-  systemStartTime: number;
+  systemStartTime?: number;
 
   /**
    * The slot length
    *
    * @type {number}
    */
-  slotLength: number;
+  slotLength?: number;
 };
 
 /**

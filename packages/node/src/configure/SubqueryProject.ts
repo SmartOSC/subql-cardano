@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0
 
 import assert from 'assert';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { RegisteredTypes } from '@polkadot/types/types';
 import { validateSemver } from '@subql/common';
 import {
@@ -30,6 +30,7 @@ import { ParentProject, Reader, RunnerSpecs } from '@subql/types-core';
 import { buildSchemaFromString } from '@subql/utils';
 import { GraphQLSchema } from 'graphql';
 import { getChainTypes } from '../utils/project';
+import { redis } from '../utils/cache';
 
 const { version: packageVersion } = require('../../package.json');
 
@@ -138,6 +139,8 @@ async function loadProjectFromManifestBase(
     ...projectManifest.network,
     ...networkOverrides,
   });
+
+  await redis.set('network', JSON.stringify(network));
 
   assert(
     network.endpoint,

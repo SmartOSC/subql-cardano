@@ -13,7 +13,7 @@ import {
   CardanoHandlerKind,
   isRuntimeDs,
   isCustomDs,
-} from 'packages/common-cardano/src';
+} from '@subql/common-cardano';
 import { SANDBOX_DEFAULT_BUILTINS, saveFile } from '@subql/node-core';
 import { BaseDataSource, Reader } from '@subql/types-core';
 import yaml from 'js-yaml';

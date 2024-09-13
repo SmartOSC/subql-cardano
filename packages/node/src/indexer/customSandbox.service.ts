@@ -35,6 +35,7 @@ import {
 import { decodeCborHex, encodeCborObj } from './utils/ibc';
 import { generateTokenName } from './utils/utils';
 import { hashSha3_256 } from './utils/hex';
+import { redis } from '../utils/cache';
 
 export class TokenAsset {
   name: string;
@@ -151,12 +152,17 @@ export class CustomSandboxService extends SandboxService<
     processor.setGlobal('generateTokenName', generateTokenName);
     processor.setGlobal('getIdFromTokenAssets', getIdFromTokenAssets);
     processor.setGlobal('hashSha3_256', hashSha3_256);
-    processor.setGlobal('getProjectNetwork', this._project.network);
+    processor.setGlobal('getProjectNetwork', this.getProjectNetwork);
     return processor;
   }
 
   protected _getDataSourceEntry(ds: BaseDataSource): string {
     return ds.mapping.file;
+  }
+
+  async getProjectNetwork() {
+    const network = await redis.get('network');
+    return JSON.parse(network || '');
   }
 
   from_explicit_network_cbor_bytes(bytes: Uint8Array): MultiEraBlock {

@@ -5,7 +5,7 @@ import assert from 'assert';
 import { Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NETWORK_FAMILY } from '@subql/common';
-import { isCustomDs } from 'packages/common-cardano/src';
+import { isCustomDs } from '@subql/common-cardano';
 import { NodeConfig, DictionaryService, getLogger } from '@subql/node-core';
 import { CardanoBlock, CardanoDatasource } from '@subql/types';
 import { DsProcessor } from '@subql/types-core';
