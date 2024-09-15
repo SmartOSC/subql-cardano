@@ -29,6 +29,7 @@ export class TxOutput {
   outputIndex: number;
   address: string;
   datum: string;
+  fee: bigint;
   datum_plutus: PlutusData;
   assets: Map<string, TokenAsset[]>;
 
@@ -38,6 +39,7 @@ export class TxOutput {
     outputIndex: number,
     address: string,
     datum: string,
+    fee: bigint,
     datum_plutus: PlutusData,
     assets: Map<string, TokenAsset[]>,
   ) {
@@ -46,6 +48,7 @@ export class TxOutput {
     this.outputIndex = outputIndex;
     this.address = address;
     this.datum = datum;
+    this.fee = fee;
     this.datum_plutus = datum_plutus;
     this.assets = assets;
   }
@@ -57,6 +60,7 @@ export function extractTxOutput(
   const outputs: TxOutput[] = [];
   for (let idx = 0; idx < txBabbageBodies.len(); idx++) {
     const body = txBabbageBodies.get(idx);
+    body.fee();
     const txOutputs = body.outputs();
     for (let subIdx = 0; subIdx < txOutputs.len(); subIdx++) {
       const output = txOutputs.get(subIdx);
@@ -73,6 +77,7 @@ export function extractTxOutput(
             hash: hash,
             outputIndex: subIdx,
             datum: alonzoTxOut?.datum_hash()?.to_hex() ?? '',
+            fee: body.fee(),
             datum_plutus: new PlutusData(),
             assets: extractMultiAssets(alonzoTxOut.amount().multi_asset()),
           });
@@ -89,6 +94,7 @@ export function extractTxOutput(
             datum: babbageTxOut.datum_option()?.as_datum()?.to_cbor_hex() ?? '',
             datum_plutus:
               babbageTxOut.datum_option()?.as_datum() ?? new PlutusData(),
+            fee: body.fee(),
             assets: extractMultiAssets(babbageTxOut.amount().multi_asset()),
           });
           break;

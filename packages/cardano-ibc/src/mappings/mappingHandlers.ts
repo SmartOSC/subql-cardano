@@ -43,6 +43,7 @@ import {Data} from '../ibc-types/plutus/data';
 import {convertHex2String, convertString2Hex, hexToBytes} from '../utils/hex';
 import {getDenomPrefix} from '../utils/helper';
 import {Connection, Message} from '../types/models';
+import { Counterparty } from '../ibc-types/core/ics_003_connection_semantics/types/counterparty/Counterparty';
 
 export async function handleCardanoBlock(cborHex: string): Promise<void> {
   logger.info(`Handling an incoming block on Cardano starting`);
@@ -52,7 +53,6 @@ export async function handleCardanoBlock(cborHex: string): Promise<void> {
   const channelTokenPrefix = generateTokenName(handlerAuthToken, CHANNEL_TOKEN_PREFIX, '');
 
   const block = from_explicit_network_cbor_bytes(fromHex(cborHex)) as CardanoBlock;
-  // const block = getMultiEraBlockFromCborHex(cborHex) as CardanoBlock;
   if (!block.as_babbage()) {
     console.error(`Handling an incoming block error: Block is not babbage`);
     return;
@@ -167,7 +167,9 @@ async function handleParseClientEvents(
 
     const clientSequence = getIdFromTokenAssets(txOutput.assets, handler.handlerAuthToken, CLIENT_PREFIX);
     const clientId = `${CLIENT_ID_PREFIX}-${clientSequence}`
-    const chainId = "42" // TODO: get config
+    const network = await getProjectNetwork()
+    const chainId = network.networkMagic
+
     const client = Client.create({
       id: `${chainId}_${clientId}`,
       height: blockHeight,
@@ -287,8 +289,8 @@ async function handleParseChannelEvents(
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
         await saveCardanoIBCAssets(eventType, eventAttributes);
         await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        // await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        // await saveMessage(eventType, txOutput.hash, blockHeight, slot, eventAttributes );
+        await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
+        await saveMessage(eventType, txOutput.hash, txOutput.fee,  blockHeight, slot, eventAttributes);
       }
       if (spendChannelRedeemer.valueOf().hasOwnProperty('TimeoutPacket')) {
         eventType = EventType.TimeoutPacket;
@@ -298,8 +300,7 @@ async function handleParseChannelEvents(
         eventType = EventType.AcknowledgePacket;
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
         await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes)
-        await saveMessage(eventType, txOutput.hash, blockHeight, slot, eventAttributes );
+        await saveMessage(eventType, txOutput.hash, txOutput.fee, blockHeight, slot, eventAttributes );
       }
       if (spendChannelRedeemer.valueOf().hasOwnProperty('SendPacket')) {
         eventType = EventType.SendPacket;
@@ -307,7 +308,7 @@ async function handleParseChannelEvents(
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
         await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
         await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        await saveMessage(eventType, txOutput.hash, blockHeight, slot, eventAttributes );
+        await saveMessage(eventType, txOutput.hash,txOutput.fee, blockHeight, slot, eventAttributes );
       }
       if (eventType == EventType.ChannelOpenInit) return;
     }
@@ -325,7 +326,6 @@ async function handleParseChannelEvents(
   }
 }
 
-// function extractClientEventAttributes(): EventAttribute[] {}
 
 function extractConnectionEventAttributes(connDatum: ConnectionDatum, connectionId: string): EventAttribute[] {
   return [
@@ -521,7 +521,9 @@ async function saveChannel(eventType: EventType, eventAttribute: EventAttribute[
   eventAttribute.forEach((item) => {
     map.set(item.key, item.value);
   });
-  const chainId = "42" //TODO: get from config
+  
+  const network = await getProjectNetwork()
+  const chainId = network.networkMagic
   
   const connectionUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeyConnectionID)}`
   const connection = await Connection.get(connectionUnit)
@@ -551,7 +553,8 @@ async function saveConnection(eventType: EventType, connDatum: ConnectionDatum, 
     features: version.features.map((features) => convertHex2String(features)),
   }));
 
-  const chainId  = "42" // TODO: get from config
+  const network = await getProjectNetwork()
+  const chainId = network.networkMagic
   const clientUnit = `${chainId}_${map.get(EventAttributeConnection.AttributeKeyClientID)}`
   const client =  await Client.get(clientUnit)
   let connection = Connection.create({
@@ -649,26 +652,51 @@ async function savePacket(
   const packetData = map.get(EventAttributeChannel.AttributeKeyData);
   const packetDataObject = JSON.parse(packetData);
 
-  const srcChainId = '42' // TODO: get from config
-  const packetId = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`
+  const network = await getProjectNetwork()
+  const srcChainId = network.networkMagic
+  
+  if( eventType === EventType.RecvPacket) {
+    const channelUnit = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeyDstPort)}_${map.get(EventAttributeChannel.AttributeKeyDstChannel)}`
+    const channel = await Channel.get(channelUnit)
 
-  const channelUnit = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}`
+    const dstChainId = channel?.counterpartyChainId
+    const packetId = `${dstChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`
+    
+    const packet = await Packet.get(packetId)
+    if(!packet) {
 
-  const channel = await Channel.get(channelUnit)
+      const newPacket = Packet.create({
+        id: packetId,
+        sequence: map.get(EventAttributeChannel.AttributeKeySequence),
+        srcChain: dstChainId,
+        srcPort: map.get(EventAttributeChannel.AttributeKeySrcPort),
+        srcChannel: map.get(EventAttributeChannel.AttributeKeySrcChannel),
+        dstChain: srcChainId,
+        dstPort: map.get(EventAttributeChannel.AttributeKeyDstPort),
+        dstChannel: map.get(EventAttributeChannel.AttributeKeyDstChannel),
+        data: packetData,
+      })
+      await newPacket.save()
+    }
+  } else {
+    const channelUnit = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}`
+    const channel = await Channel.get(channelUnit)
+    const packetId = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`
 
-  const newPacket = Packet.create({
-    id: packetId,
-    sequence: map.get(EventAttributeChannel.AttributeKeySequence),
-    srcChain: srcChainId,
-    srcPort: map.get(EventAttributeChannel.AttributeKeySrcPort),
-    srcChannel: map.get(EventAttributeChannel.AttributeKeySrcChannel),
-    dstChain: channel?.counterpartyChainId,
-    dstPort: map.get(EventAttributeChannel.AttributeKeyDstPort),
-    dstChannel: map.get(EventAttributeChannel.AttributeKeyDstChannel),
-    data: packetData,
-  })
-
-  await newPacket.save()
+    const newPacket = Packet.create({
+      id: packetId,
+      sequence: map.get(EventAttributeChannel.AttributeKeySequence),
+      srcChain: srcChainId,
+      srcPort: map.get(EventAttributeChannel.AttributeKeySrcPort),
+      srcChannel: map.get(EventAttributeChannel.AttributeKeySrcChannel),
+      dstChain: channel?.counterpartyChainId,
+      dstPort: map.get(EventAttributeChannel.AttributeKeyDstPort),
+      dstChannel: map.get(EventAttributeChannel.AttributeKeyDstChannel),
+      data: packetData,
+    })
+  
+    await newPacket.save()
+  }
 }
 
 
@@ -677,6 +705,7 @@ async function saveMessage(
   txHash: String,
   blockHeight: BigInt,
   slot: BigInt,
+  fee: BigInt,
   eventAttribute: EventAttribute[],
 ) {
   let map = new Map<string, string>();
@@ -687,23 +716,49 @@ async function saveMessage(
   const packetData = map.get(EventAttributeChannel.AttributeKeyData);
   const packetDataObject = JSON.parse(packetData);
 
-  const chainId = '42' //TODO: get from config
-  const messageId = `${chainId}_${txHash}_0_${eventType}`
-  const packetUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`
+  const network = await getProjectNetwork()
+  const chainId = network.networkMagic
+  const time = BigInt(network.systemStart) + BigInt(network.slotLength) * slot
 
-  const newMessage = Message.create({
-    id: messageId,
-    chainId: chainId,
-    msgIdx: 0,
-    txHash: txHash,
-    sender: packetDataObject?.sender,
-    receiver: packetDataObject?.receiver,
-    msgType: eventType,
-    packetId: packetUnit,
-    time: 1,
-  }) 
+  if( eventType == MsgType.RecvPacket) {
+      const messageId = `${chainId}_${txHash}_0_${eventType}`
+      const channleUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeyDstPort)}_${map.get(EventAttributeChannel.AttributeKeyDstChannel)}`
+      const channel = await Channel.get(channleUnit)
+      const counterpartyChainId = channel?.counterpartyChainId
 
-  await newMessage.save()
+      const packetUnit = `${counterpartyChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`
+      const newMessage = Message.create({
+        id: messageId,
+        chainId: counterpartyChainId,
+        msgIdx: 0,
+        txHash: txHash,
+        sender: packetDataObject?.sender,
+        receiver: packetDataObject?.receiver,
+        msgType: eventType,
+        packetId: packetUnit,
+        gas: fee,
+        time: time,
+      })
+      await newMessage.save()
+  } else {
+    const messageId = `${chainId}_${txHash}_0_${eventType}`
+    const packetUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`
+  
+    const newMessage = Message.create({
+      id: messageId,
+      chainId: chainId,
+      msgIdx: 0,
+      txHash: txHash,
+      sender: packetDataObject?.sender,
+      receiver: packetDataObject?.receiver,
+      msgType: eventType,
+      packetId: packetUnit,
+      gas: fee,
+      time: time,
+    }) 
+  
+    await newMessage.save()
+  }
 }
 
 function getDenomBase(denom: string): string {
@@ -744,6 +799,7 @@ export class TxOutput {
   outputIndex: number;
   address: string;
   datum: string;
+  fee: bigint;
   datum_plutus: PlutusData;
   assets: Map<string, TokenAsset[]>;
 
@@ -753,6 +809,7 @@ export class TxOutput {
     outputIndex: number,
     address: string,
     datum: string,
+    fee: bigint,
     datum_plutus: PlutusData,
     assets: Map<string, TokenAsset[]>
   ) {
@@ -761,6 +818,7 @@ export class TxOutput {
     this.outputIndex = outputIndex;
     this.address = address;
     this.datum = datum;
+    this.fee = fee;
     this.datum_plutus = datum_plutus;
     this.assets = assets;
   }
