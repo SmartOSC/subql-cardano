@@ -75,7 +75,7 @@ const DEFAULT_CONFIG = {
   profiler: false,
   subscription: false,
   disableHistorical: true,
-  multiChain: false,
+  multiChain: true,
   unfinalizedBlocks: false,
   storeCacheThreshold: 1000,
   storeCacheUpperLimit: 10000,
