@@ -12,5 +12,5 @@ else
   exit 1
 fi
 
-cd packages/node
-node dist/main.js
+cd ../node
+yarn start:dev --multi-chain
