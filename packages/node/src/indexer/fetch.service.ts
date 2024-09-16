@@ -503,9 +503,11 @@ export class FetchService
         const value = JSON.stringify(chainTipStart);
 
         await this.redisCaching.set<string>(key, value, {
-          ttl: 24 * 60 * 60, // 1 day
+          ttl: 8 * 60 * 60, // 1 day
         });
-        await this.redisCaching.set('startPoint', value);
+        await this.redisCaching.set('startPoint', value, {
+          ttl: 10 * 365 * 24 * 60 * 60
+        });
 
         // wokerLogger.info(
         //   `Fetch Chain Point From Cardano Height = ${next.blockNo.toString()} Successful!`,
@@ -544,7 +546,9 @@ export class FetchService
 
       chainTipStart = JSON.parse(cached) as unknown as IChainTipSchema;
     }
-    await this.redisCaching.set('startPoint', JSON.stringify(chainTipStart));
+    await this.redisCaching.set('startPoint', JSON.stringify(chainTipStart), {
+      ttl: 10 * 365 * 24 * 60 * 60
+    });
 
     return chainTipStart;
   }
