@@ -93,6 +93,7 @@ type Message @entity {
   msgError: String
   gas: BigInt,
   time: BigInt!,
+  data: String,
 }
 
 type EventAttribute @jsonField(indexed: false) {
