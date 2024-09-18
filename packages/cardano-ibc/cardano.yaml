@@ -28,6 +28,9 @@ dataSources:
     startBlock: 242449
     startSlot: 969165
     startBlockHash: 9C750D31BAA93328049439D534253E47A71A4D5ADA5F5A6024C697E0E0B92F68
+    # startBlock: 244006
+    # startSlot: 975352
+    # startBlockHash: E470AF174FAE9EBD1B1855D456EE6A7C10085E50C51C451CAF2A69E8EFF4DDBB
     mapping:
       file: ./dist/index.js
       handlers:

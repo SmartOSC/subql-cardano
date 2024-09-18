@@ -34,9 +34,7 @@ export function hashSha3_256(data: string): string {
 }
 
 export function hashSha_256(data: string): string {
-  console.log("hashSha_256")
   const hash = sha256(Buffer.from(data, 'hex')).toString();
-  console.log("hash", hash)
   return hash
 }
 
