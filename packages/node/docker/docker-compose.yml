@@ -18,7 +18,7 @@ services:
   redis:
     image: redis:7.0-alpine
     ports:
-      - '6379:6379'
+      - '6380:6379'
     command: redis-server
     volumes:
       - .data/redis:/data
@@ -72,4 +72,4 @@ services:
     command:
       - --name=cardano-ibc
       - --playground
-      - --indexer=http://subql-cardano:3001
+      - --indexer=http://localhost:3002

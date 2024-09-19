@@ -10,6 +10,8 @@ import {GithubReader} from './github-reader';
 import {IPFSReader} from './ipfs-reader';
 import {LocalReader} from './local-reader';
 
+export const DEFAULT_CARDANO_MANIFEST = 'cardano.yaml';
+
 export class ReaderFactory {
   // eslint-disable-next-line @typescript-eslint/require-await
   static async create(location: string, options?: ReaderOptions): Promise<Reader> {
@@ -28,6 +30,10 @@ export class ReaderFactory {
     if (fs.existsSync(location)) {
       const project = getProjectRootAndManifest(location);
       if (project.manifests.length > 1) {
+        const cardanoManifest = project.manifests.find((e) => e.indexOf(DEFAULT_CARDANO_MANIFEST) !== -1);
+        if (cardanoManifest) {
+          return new LocalReader(project.root, path.join(project.root, cardanoManifest));
+        }
         throw new Error(`Mulitple manifests found, expected only one`);
       }
       return new LocalReader(project.root, path.join(project.root, project.manifests[0]));
