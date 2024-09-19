@@ -25,7 +25,7 @@ services:
 
   subql-cardano:
     container_name: subql-cardano
-    image: cuonglv0297/subql-cardano:v1.0.1-non-mithril
+    image: cuonglv0297/subql-node-cardano:latest
     # build:
     #   context: ..
     #   dockerfile: ./packages/node/Dockerfile
@@ -55,7 +55,7 @@ services:
           "CMD",
           "curl",
           "-f",
-          "http://subql-cardano:3001/ready"
+          "http://subql-query:3000/ready"
         ]
       interval: 3s
       timeout: 5s

@@ -37,7 +37,6 @@
     }
   },
   "references": [
-    {"path": "packages/cli"},
     {"path": "packages/common"},
     {"path": "packages/common-cardano"},
     {"path": "packages/node"},

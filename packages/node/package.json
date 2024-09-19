@@ -41,6 +41,8 @@
     "cache-manager-redis-store": "2.0.0",
     "fetch-h2": "3.0.2",
     "ioredis": "4.28.5",
+    "js-sha256": "^0.11.0",
+    "js-sha3": "^0.9.3",
     "lodash": "^4.17.21",
     "redis": "^4.6.15",
     "reflect-metadata": "^0.1.13",

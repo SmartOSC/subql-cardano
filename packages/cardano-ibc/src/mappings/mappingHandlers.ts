@@ -5,6 +5,7 @@ import {
   MultiEraBlock as CardanoBlock,
   CoinSelectionStrategyCIP2,
   PlutusData,
+  TxPayload,
 } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import * as handler from '../contracts/handler.json';
 import {
@@ -34,6 +35,8 @@ import {
   CardanoTransfer,
   MsgType,
   Packet,
+  PacketFlow,
+  PacketFlowProcess,
 } from '../types';
 import {EventAttributeChannel, EventAttributeConnection, EventAttributeClient} from '../constants/eventAttributes';
 import {fromHex} from '@harmoniclabs/uint8array-utils';
@@ -43,7 +46,6 @@ import {Data} from '../ibc-types/plutus/data';
 import {convertHex2String, convertString2Hex, hexToBytes} from '../utils/hex';
 import {getDenomPrefix} from '../utils/helper';
 import {Connection, Message} from '../types/models';
-import {Counterparty} from '../ibc-types/core/ics_003_connection_semantics/types/counterparty/Counterparty';
 
 export async function handleCardanoBlock(cborHex: string): Promise<void> {
   const handlerAuthToken = handler.handlerAuthToken;
@@ -96,8 +98,7 @@ export async function handleCardanoBlock(cborHex: string): Promise<void> {
       const transactionWitnessSets = babbageBlock.transaction_witness_sets().get(txOutput.txIndex);
       if (!transactionWitnessSets.redeemers()?.len()) continue;
       const redeemers = transactionWitnessSets.redeemers() as AlonzoRedeemerList;
-
-      await handleParseChannelEvents(txOutput, redeemers, blockHeight, slot);
+      await handleParseChannelEvents(txOutput, redeemers, blockHeight, slot, transactionWitnessSets);
     }
   }
 }
@@ -112,7 +113,7 @@ async function handleParseClientEvents(
     const clientDatum = decodeCborHex(txOutput.datum, ClientDatum);
     const latestConsensus = [...clientDatum.state.consensus_states].at(-1);
     const fstRedeemerData = redeemers.get(0).data();
-
+    const txHash = txOutput.hash.toUpperCase();
     let eventType: EventType = EventType.ChannelOpenInit;
     let header = '';
     if (fstRedeemerData.as_constr_plutus_data()?.fields().len() == 0) {
@@ -130,7 +131,6 @@ async function handleParseClientEvents(
 
       if (spendClientRedeemer.valueOf().hasOwnProperty('UpdateClient')) {
         // TODO: get header update client
-
         const UpdateClientSchema = Data.Object({UpdateClient: Data.Object({msg: ClientMessageSchema})});
         type UpdateClientSchema = Data.Static<typeof UpdateClientSchema>;
         const HeaderCaseSchema = Data.Object({HeaderCase: Data.Tuple([HeaderSchema])});
@@ -145,9 +145,9 @@ async function handleParseClientEvents(
     }
 
     const event = Event.create({
-      id: `${txOutput.hash}-${txOutput.txIndex}`,
+      id: `${txHash}-${txOutput.txIndex}`,
       blockHeight: blockHeight,
-      txHash: txOutput.hash,
+      txHash: txHash,
       type: eventType,
       eventAttributes: [
         {
@@ -196,6 +196,7 @@ async function handleParseConnectionEvents(
     let eventAttributes: EventAttribute[] = [];
     // for connection init
     const connectionId = getIdFromTokenAssets(txOutput.assets, handler.handlerAuthToken, CONNECTION_TOKEN_PREFIX);
+    const txHash = txOutput.hash.toUpperCase();
     if (connectionDatum.state.state == 'Init') {
       const mintConnectionRedeemerHex = redeemers.get(1).data().to_cbor_hex();
       const mintConnectionRedeemer = decodeCborHex(mintConnectionRedeemerHex, MintConnectionRedeemer);
@@ -226,9 +227,9 @@ async function handleParseConnectionEvents(
     await saveConnection(eventType, connectionDatum, eventAttributes);
 
     const event = Event.create({
-      id: `${txOutput.hash}-${txOutput.txIndex}`,
+      id: `${txHash}-${txOutput.txIndex}`,
       blockHeight: blockHeight,
-      txHash: txOutput.hash,
+      txHash: txHash,
       type: eventType,
       eventAttributes: eventAttributes,
     });
@@ -242,7 +243,8 @@ async function handleParseChannelEvents(
   txOutput: TxOutput,
   redeemers: AlonzoRedeemerList,
   blockHeight: bigint,
-  slot: bigint
+  slot: bigint,
+  txWitness: BabbageTransactionWitnessSet,
 ): Promise<void> {
   try {
     // case channel init
@@ -251,6 +253,8 @@ async function handleParseChannelEvents(
     let eventType: EventType = EventType.ChannelOpenInit;
     let eventAttributes: EventAttribute[] = [];
     const currentChannelId = getIdFromTokenAssets(txOutput.assets, handler.handlerAuthToken, CHANNEL_TOKEN_PREFIX);
+    const signer = await getSigner(txWitness);
+    const txHash = txOutput.hash.toUpperCase();
     if (channelDatum.state.channel.state == 'Init') {
       const mintChannelRedeemerHex = redeemers.get(2).data().to_cbor_hex();
       const mintChannelRedeemer = decodeCborHex(mintChannelRedeemerHex, MintChannelRedeemer);
@@ -288,9 +292,10 @@ async function handleParseChannelEvents(
         eventType = EventType.RecvPacket;
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
         await saveCardanoIBCAssets(eventType, eventAttributes);
-        await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        await saveMessage(eventType, txOutput.hash, txOutput.fee, blockHeight, slot, eventAttributes);
+        await saveCardanoTransfers(eventType, txHash, blockHeight, slot, eventAttributes);
+        await savePacket(eventType, txHash, blockHeight, slot, eventAttributes);
+        await saveMessage(eventType, txHash, blockHeight, slot, txOutput.fee, signer, eventAttributes);
+        await savePacketFlow(eventType, txHash, blockHeight, slot, signer, eventAttributes)
       }
       if (spendChannelRedeemer.valueOf().hasOwnProperty('TimeoutPacket')) {
         eventType = EventType.TimeoutPacket;
@@ -299,24 +304,26 @@ async function handleParseChannelEvents(
       if (spendChannelRedeemer.valueOf().hasOwnProperty('AcknowledgePacket')) {
         eventType = EventType.AcknowledgePacket;
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
-        await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        await saveMessage(eventType, txOutput.hash, txOutput.fee, blockHeight, slot, eventAttributes);
+        await saveCardanoTransfers(eventType, txHash, blockHeight, slot, eventAttributes);
+        await saveMessage(eventType, txHash, blockHeight, slot, txOutput.fee, signer, eventAttributes);
+        await savePacketFlow(eventType, txHash, blockHeight, slot, signer, eventAttributes)
       }
       if (spendChannelRedeemer.valueOf().hasOwnProperty('SendPacket')) {
         eventType = EventType.SendPacket;
         // const packetData = getPacketData(spendChannelRedeemer)
         eventAttributes = extractPacketEventAttributes(channelDatum, spendChannelRedeemer);
-        await saveCardanoTransfers(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        await savePacket(eventType, txOutput.hash, blockHeight, slot, eventAttributes);
-        await saveMessage(eventType, txOutput.hash, txOutput.fee, blockHeight, slot, eventAttributes);
+        await saveCardanoTransfers(eventType, txHash, blockHeight, slot, eventAttributes);
+        await savePacket(eventType, txHash, blockHeight, slot, eventAttributes);
+        await saveMessage(eventType, txHash, blockHeight, slot, txOutput.fee, signer, eventAttributes);
+        await savePacketFlow(eventType, txHash, blockHeight, slot, signer, eventAttributes)
       }
       if (eventType == EventType.ChannelOpenInit) return;
     }
 
     const event = Event.create({
-      id: `${txOutput.hash}-${txOutput.txIndex}`,
+      id: `${txHash}-${txOutput.txIndex}`,
       blockHeight: blockHeight,
-      txHash: txOutput.hash,
+      txHash: txHash,
       type: eventType,
       eventAttributes: eventAttributes,
     });
@@ -479,7 +486,7 @@ async function saveCardanoIBCAssets(eventType: EventType, eventAttribute: EventA
     case EventType.RecvPacket:
       const denomRecv = packetDataObject?.denom;
       const voucherTokenRecvPrefix = getDenomPrefix(
-        map.get(EventAttributeChannel.AttributeKeyDstPort),
+        map.get(EventAttributeChannel.AttributeKeyDstPort),        
         map.get(EventAttributeChannel.AttributeKeyDstChannel)
       );
       // check case mint
@@ -622,18 +629,6 @@ async function saveCardanoTransfers(
   await newCardanoTransfer.save();
 }
 
-function getPacketData(channelRedeemer: SpendChannelRedeemer): string {
-  let packetData: PacketSchema;
-  if (channelRedeemer.hasOwnProperty('RecvPacket')) packetData = channelRedeemer['RecvPacket']?.packet as unknown;
-  if (channelRedeemer.hasOwnProperty('SendPacket')) packetData = channelRedeemer['SendPacket']?.packet as unknown;
-  if (channelRedeemer.hasOwnProperty('AcknowledgePacket')) {
-    packetData = channelRedeemer['AcknowledgePacket']?.packet as unknown;
-    acknowledgement = channelRedeemer['AcknowledgePacket']?.acknowledgement;
-  }
-  if (channelRedeemer.hasOwnProperty('TimeoutPacket')) packetData = channelRedeemer['TimeoutPacket']?.packet as unknown;
-  return packetData?.data;
-}
-
 async function savePacket(
   eventType: EventType,
   txHash: String,
@@ -661,7 +656,7 @@ async function savePacket(
 
     const packet = await Packet.get(packetId);
     if (!packet) {
-      const newPacket = Packet.create({
+      let newPacket = Packet.create({
         id: packetId,
         sequence: map.get(EventAttributeChannel.AttributeKeySequence),
         srcChain: dstChainId,
@@ -672,6 +667,12 @@ async function savePacket(
         dstChannel: map.get(EventAttributeChannel.AttributeKeyDstChannel),
         data: packetData,
       });
+
+      if ( newPacket.srcPort == "port-100" || newPacket.srcPort == "transfer") {
+        newPacket.module = "transfer"
+      } else {
+        newPacket.module = newPacket.srcPort
+      }
       await newPacket.save();
     }
   } else {
@@ -679,7 +680,7 @@ async function savePacket(
     const channel = await Channel.get(channelUnit);
     const packetId = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`;
 
-    const newPacket = Packet.create({
+    let newPacket = Packet.create({
       id: packetId,
       sequence: map.get(EventAttributeChannel.AttributeKeySequence),
       srcChain: srcChainId,
@@ -691,8 +692,118 @@ async function savePacket(
       data: packetData,
     });
 
+    if ( newPacket.srcPort == "port-100" || newPacket.srcPort == "transfer") {
+      newPacket.module = "transfer"
+    } else {
+      newPacket.module = newPacket.srcPort
+    }
+
     await newPacket.save();
   }
+}
+
+async function savePacketFlow(  
+  eventType: EventType,
+  txHash: String,
+  blockHeight: BigInt,
+  slot: BigInt,
+  signer: String,
+  eventAttribute: EventAttribute[]
+) {
+
+  let map = new Map<string, string>();
+
+  eventAttribute.forEach((item) => {
+    map.set(item.key, item.value);
+  });
+  const packetData = map.get(EventAttributeChannel.AttributeKeyData);
+  const packetDataObject = JSON.parse(packetData);
+
+  const network = await getProjectNetwork();
+  const srcChainId = network.networkMagic;
+
+  const eventData = {
+    srcPort: map.get(EventAttributeChannel.AttributeKeySrcPort)
+  }
+
+  const time = BigInt(network.systemStart) + BigInt(network.slotLength) * BigInt(slot);
+  logger.info("savePacketFloW_" + eventType) 
+  if(eventType == EventType.SendPacket) {
+    const channelUnit = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}`;
+    const channel = await Channel.get(channelUnit);
+
+    const packetFlowId = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`;
+
+    const newPacketFlow = PacketFlow.create({
+      id: packetFlowId,
+      fromTxHash: txHash,
+      fromAddress: signer,
+      fromChainId: srcChainId,
+      // toAddress: packetDataObject?.receiver,
+      status:PacketFlowProcess.processing,
+      createTime: time,
+      updatedTime: time,
+    })
+
+    await newPacketFlow.save();
+  }
+  else if(eventType == EventType.RecvPacket) {
+    // const channelUnit = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeyDstPort)}_${map.get(EventAttributeChannel.AttributeKeyDstChannel)}`;
+    // const channel = await Channel.get(channelUnit);
+
+    // const dstChainId = channel?.counterpartyChainId;
+    // const packetId = `${dstChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`;
+
+    // const packet = await Packet.get(packetId);
+    // const packetFlowId = `${dstChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`;
+    // const packetFlow = await PacketFlow.get(packetFlowId)
+    // console.log("savePacketFlow_RecvPacket_" + packetFlowId)
+    // console.dir(packetFlow,{depth: 100});
+    
+    // if(typeof packetFlow !== 'undefined') {
+    //   console.log("case1")
+    //   packetFlow.updatedTime = time
+    //   packetFlow.status = PacketFlowProcess.processing,
+    //   await packetFlow.save();
+    // }
+    // else {
+    //   console.log("case2")
+    //   const newPacketFlow = PacketFlow.create({
+    //     id: packetFlowId,
+    //     toAddress: packetDataObject?.sender,
+    //     fromTxHash: "0x",
+    //     fromAddress: "0xa",
+    //     fromChainId: dstChainId,
+    //     createTime: time,
+    //     updatedTime: time,
+    //     status: PacketFlowProcess.processing,
+    //   })
+    //   await newPacketFlow.save();
+    // }    
+  }
+  else if(eventType == EventType.AcknowledgePacket) {
+    const packetFlowId = `${srcChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`;
+    const packetFlow = await PacketFlow.get(packetFlowId)
+    packetFlow.toTxHash = txHash;
+    packetFlow.toAddress = packetDataObject?.receiver
+    packetFlow.endTime=  time;
+    packetFlow.updatedTime = time;
+    packetFlow.status = PacketFlowProcess.success;
+
+    await packetFlow.save();
+  }
+}
+
+async function getSigner( txWitness: BabbageTransactionWitnessSet) {
+  let vkeys = []
+  const vkeywitnesses = txWitness.vkeywitnesses()
+  if (typeof vkeywitnesses !== 'undefined') {
+    for(let i = 0 ;i< vkeywitnesses.len();i++) {
+      const txWitnes = vkeywitnesses.get(i).vkey().hash().to_hex();
+      vkeys.push(txWitnes)
+    }
+  }
+  return vkeys.join(',');
 }
 
 async function saveMessage(
@@ -701,7 +812,8 @@ async function saveMessage(
   blockHeight: BigInt,
   slot: BigInt,
   fee: BigInt,
-  eventAttribute: EventAttribute[]
+  signer: String,
+  eventAttribute: EventAttribute[],
 ) {
   let map = new Map<string, string>();
 
@@ -713,8 +825,8 @@ async function saveMessage(
 
   const network = await getProjectNetwork();
   const chainId = network.networkMagic;
-  const time = BigInt(network.systemStart) + BigInt(network.slotLength) * slot;
-
+  const time = BigInt(network.systemStart) + BigInt(network.slotLength) * BigInt(slot);
+  let dataMsgString = ""
   if (eventType == MsgType.RecvPacket) {
     const messageId = `${chainId}_${txHash}_0_${eventType}`;
     const channleUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeyDstPort)}_${map.get(EventAttributeChannel.AttributeKeyDstChannel)}`;
@@ -722,34 +834,100 @@ async function saveMessage(
     const counterpartyChainId = channel?.counterpartyChainId;
 
     const packetUnit = `${counterpartyChainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`;
-    const newMessage = Message.create({
-      id: messageId,
-      chainId: counterpartyChainId,
-      msgIdx: 0,
-      txHash: txHash,
-      sender: packetDataObject?.sender,
-      receiver: packetDataObject?.receiver,
-      msgType: eventType,
-      packetId: packetUnit,
-      gas: fee,
-      time: time,
-    });
-    await newMessage.save();
-  } else {
-    const messageId = `${chainId}_${txHash}_0_${eventType}`;
-    const packetUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`;
+    
+    const denomRecv = packetDataObject?.denom;
+    const voucherTokenRecvPrefix = getDenomPrefix(
+      map.get(EventAttributeChannel.AttributeKeyDstPort),
+      map.get(EventAttributeChannel.AttributeKeyDstChannel)
+    );
+
+    if (!denomRecv.startsWith(voucherTokenRecvPrefix)) {
+      const prefixDenom = convertString2Hex(voucherTokenRecvPrefix + denomRecv);
+      const voucherTokenName = hashSha3_256(prefixDenom);
+      const voucherTokenUnit = handler.validators.mintVoucher.scriptHash + voucherTokenName;
+      // const cardanoIbcAsset = await store.get(`CardanoIbcAsset`, `${voucherTokenUnit}`);
+
+      const denomPath = getPathTrace(
+        map.get(EventAttributeChannel.AttributeKeyDstPort),
+        map.get(EventAttributeChannel.AttributeKeyDstChannel),
+        packetDataObject?.denom
+      );
+
+      const denomBase = getDenomBase(packetDataObject?.denom);
+
+      let voucherTokenUnitIn = denomBase
+
+      if(denomBase != packetDataObject?.denom) {
+        const hashDenom = hashSha_256(packetDataObject?.denom)
+        voucherTokenUnitIn = `ibc/${hashDenom}`
+      }
+
+      const dataMessage = {
+        transfer: {
+          in: {
+            token: voucherTokenUnitIn,
+            amount: packetDataObject?.amount,
+            path: packetDataObject?.denom
+          },
+          out: {
+            token: voucherTokenUnit,
+            amount: packetDataObject?.amount,
+            path: `${denomPath}/${denomBase}`,
+          }
+        }
+      }
+      dataMsgString = JSON.stringify(dataMessage);
+    }
 
     const newMessage = Message.create({
       id: messageId,
       chainId: chainId,
       msgIdx: 0,
       txHash: txHash,
-      sender: packetDataObject?.sender,
-      receiver: packetDataObject?.receiver,
+      sender: signer,
+      receiver: "",
       msgType: eventType,
       packetId: packetUnit,
       gas: fee,
       time: time,
+      code:0,
+      data: dataMsgString,
+    });
+    await newMessage.save();
+  } else {
+    const messageId = `${chainId}_${txHash}_0_${eventType}`;
+    const packetUnit = `${chainId}_${map.get(EventAttributeChannel.AttributeKeySrcPort)}_${map.get(EventAttributeChannel.AttributeKeySrcChannel)}_${map.get(EventAttributeChannel.AttributeKeySequence)}`;
+
+    if(eventType == MsgType.SendPacket) {
+      const dataMessage = {
+        transfer: {
+          in: {
+            token: packetDataObject?.denom,
+            amount: packetDataObject?.amount,
+            path: packetDataObject?.denom
+          },
+          out: {
+            token: "",
+            amount: "",
+            path: "",
+          }
+        }
+      }
+      dataMsgString = JSON.stringify(dataMessage);
+    }
+    const newMessage = Message.create({
+      id: messageId,
+      chainId: chainId,
+      msgIdx: 0,
+      txHash: txHash,
+      sender: signer,
+      receiver: "",
+      msgType: eventType,
+      packetId: packetUnit,
+      gas: fee,
+      time: time,
+      code:0,
+      data: dataMsgString,
     });
 
     await newMessage.save();
@@ -777,6 +955,7 @@ function getPathTrace(port: string, channel: string, denom: string): string {
     return res;
   }
 }
+
 
 // utxo.ts
 export class TokenAsset {

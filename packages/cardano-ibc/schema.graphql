@@ -78,6 +78,7 @@ type Packet @entity {
   data:String,
   module: String,
   parentPacket: Packet,
+  # rootPacket: String,
 }
 
 type Message @entity {
@@ -93,6 +94,7 @@ type Message @entity {
   msgError: String
   gas: BigInt,
   time: BigInt!,
+  data: String,
 }
 
 type EventAttribute @jsonField(indexed: false) {
@@ -148,4 +150,22 @@ type CardanoIbcAsset @entity {
   dstPort: String!
   dstChannel: String!
   path: String!
+}
+
+enum PacketFlowProcess {
+  success
+  failed
+  processing
+}
+type PacketFlow @entity {
+  id: ID!
+  fromTxHash: String!
+  fromAddress: String!
+  fromChainId: String!
+  status: PacketFlowProcess!
+  toTxHash: String
+  toAddress: String
+  createTime: BigInt!
+  endTime: BigInt
+  updatedTime: BigInt!
 }

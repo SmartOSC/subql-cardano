@@ -1,5 +1,7 @@
 import { sha3_256 } from 'js-sha3';
+import { sha256} from 'js-sha256'
 import crypto from 'crypto';
+import { has } from 'lodash';
 
 const hexTable = new TextEncoder().encode('0123456789abcdef');
 
@@ -29,6 +31,11 @@ export function convertString2Hex(str: string) {
 export function hashSha3_256(data: string): string {
   const hash = sha3_256(Buffer.from(data, 'hex')).toString();
   return hash;
+}
+
+export function hashSha_256(data: string): string {
+  const hash = sha256(Buffer.from(data, 'hex')).toString();
+  return hash
 }
 
 export function toHex(bytes: Uint8Array) {
