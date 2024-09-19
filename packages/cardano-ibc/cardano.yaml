@@ -25,9 +25,9 @@ network:
   endpoint: ['ws://dev.cf-ibc-testnet-mithril-sidechain.metadata.dev.cf-deployments.org:3001']
 dataSources:
   - kind: cardano/Runtime
-    startBlock: 242449
-    startSlot: 969165
-    startBlockHash: 9C750D31BAA93328049439D534253E47A71A4D5ADA5F5A6024C697E0E0B92F68
+    startBlock: 306199
+    startSlot: 1224478
+    startBlockHash: d146b9e0ef66a64a7433406cf3d5d91a486465a40b98ea01140c4c64c1b2eef3
     # startBlock: 244006
     # startSlot: 975352
     # startBlockHash: E470AF174FAE9EBD1B1855D456EE6A7C10085E50C51C451CAF2A69E8EFF4DDBB

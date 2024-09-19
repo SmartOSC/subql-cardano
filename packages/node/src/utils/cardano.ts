@@ -199,7 +199,7 @@ export async function fetchBlockByHeight(
     const chainPoint = chainTip.point;
     return timeout(
       api.fetchBlockByPoint(chainPoint),
-      3,
+      10,
       `Fetch block by height ${chainTip.blockNo} timeout.`,
     );
   }, MAX_RECONNECT_ATTEMPTS);
