@@ -1,4 +1,11 @@
-import { Header, delay, getLogger } from '@subql/node-core';
+import {
+  Header,
+  backoffRetry,
+  delay,
+  getLogger,
+  isBackoffError,
+  timeout,
+} from '@subql/node-core';
 import { MiniProtocolClient } from './miniProtocolClient';
 import { fromHex, toHex } from '../utils/hex';
 import {
@@ -27,6 +34,7 @@ import { Socket } from 'net';
 import { redis } from '../../utils/cache';
 
 const logger = getLogger('CardanoClient');
+const MAX_RECONNECT_ATTEMPTS = 5;
 export class CardanoClient {
   constructor(private miniClient: MiniProtocolClient) {}
 
@@ -133,33 +141,12 @@ export class CardanoClient {
       const intersect = await chainSyncClient.findIntersect([point]);
       const rollBackwards = await chainSyncClient.requestNext();
 
-      const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
-        const nextData = next.data as CborArray;
-        const nextHeader = nextData.array[1] as CborTag;
-        let nextHeaderBytes = (nextHeader.data as CborBytes).bytes;
-        const blockHeaderCbor = Cbor.parse(nextHeaderBytes) as CborArray;
-        const blockHeaderBody = blockHeaderCbor.array[0];
-        const blockHash = createHash32(nextHeaderBytes);
-
-        const blockHeaderBodyArray = (blockHeaderBody as CborArray).array;
-        const [blockNoCbor, blockSlotCbor] = blockHeaderBodyArray;
-
-        return {
-          point: {
-            blockHeader: {
-              hash: fromHex(blockHash),
-              slotNumber: (blockSlotCbor as CborUInt).num,
-            },
-          },
-          blockNo: (blockNoCbor as CborUInt).num,
-        };
-      };
-
       const results: IChainTip[] = [];
       for (let i = 0; i < batchSize; i++) {
-        const rollForwards = await chainSyncClient.requestNext();
-        if (rollForwards instanceof ChainSyncRollForward) {
-          results.push(extractChainPoint(rollForwards));
+        const rollForwards =
+          await this.fetchNextRollForwardPoint(chainSyncClient);
+        if (rollForwards) {
+          results.push(rollForwards);
         }
       }
 
@@ -170,6 +157,58 @@ export class CardanoClient {
       this.disconnect(chainSyncClient, socket);
     }
     throw new Error('Request Next From Start Point failed: not found point');
+  }
+
+  async fetchNextRollForwardPoint(
+    chainSyncClient: ChainSyncClient,
+  ): Promise<IChainTip> {
+    const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
+      const nextData = next.data as CborArray;
+      const nextHeader = nextData.array[1] as CborTag;
+      let nextHeaderBytes = (nextHeader.data as CborBytes).bytes;
+      const blockHeaderCbor = Cbor.parse(nextHeaderBytes) as CborArray;
+      const blockHeaderBody = blockHeaderCbor.array[0];
+      const blockHash = createHash32(nextHeaderBytes);
+
+      const blockHeaderBodyArray = (blockHeaderBody as CborArray).array;
+      const [blockNoCbor, blockSlotCbor] = blockHeaderBodyArray;
+
+      return {
+        point: {
+          blockHeader: {
+            hash: fromHex(blockHash),
+            slotNumber: (blockSlotCbor as CborUInt).num,
+          },
+        },
+        blockNo: (blockNoCbor as CborUInt).num,
+      };
+    };
+
+    return this.retryFetchNextRollForwardPoint(() => {
+      const promiseFn = async (): Promise<IChainTip> => {
+        const rollForwards = await chainSyncClient.requestNext();
+        if (rollForwards instanceof ChainSyncRollForward) {
+          return extractChainPoint(rollForwards);
+        }
+        throw new Error('Fetch Next Roll Forward Point failed');
+      };
+      return timeout(promiseFn(), 10, `Fetch Next Roll Forward Point timeout.`);
+    }, MAX_RECONNECT_ATTEMPTS);
+  }
+
+  async retryFetchNextRollForwardPoint(
+    fn: () => Promise<IChainTip>,
+    numAttempts = MAX_RECONNECT_ATTEMPTS,
+  ): Promise<IChainTip> {
+    try {
+      return await backoffRetry(fn, numAttempts);
+    } catch (e) {
+      if (isBackoffError(e)) {
+        logger.error(e.message);
+        throw e.lastError;
+      }
+      throw e;
+    }
   }
 
   async requestNextPoint(batchSize: number): Promise<IChainTip[]> {

@@ -156,8 +156,8 @@ export class FetchService
 
   private _latestHeight(): number {
     return this._nodeConfig.unfinalizedBlocks
-      ? this._latestBestHeightTmp ?? 0
-      : this._latestFinalizedHeightTmp ?? 0;
+      ? (this._latestBestHeightTmp ?? 0)
+      : (this._latestFinalizedHeightTmp ?? 0);
   }
 
   async getBestBlockHead(): Promise<void> {
@@ -507,15 +507,15 @@ export class FetchService
         });
         await this.redisCaching.set('startPoint', value);
 
-        // wokerLogger.info(
-        //   `Fetch Chain Point From Cardano Height = ${next.blockNo.toString()} Successful!`,
-        // );
+        wokerLogger.info(
+          `Fetch Chain Point From Cardano Height = ${next.blockNo.toString()} Successful!`,
+        );
       }
     } catch (error) {
       wokerLogger.error(`Fetch Chain Point From Cardano ERR: ${error}`);
+    } finally {
+      this.runWorkerFetchChainPoint();
     }
-
-    this.runWorkerFetchChainPoint();
   }
 
   async getCurrentStartPoint(
