@@ -450,13 +450,21 @@ export class FetchService
   }
 
   runWorkerFetchChainPoint(startPoint?: IChainTipSchema) {
+    const recoverTimeoutId = setTimeout(() => {
+      logger.error('Recover Worker Fetch Chain Point From Cardano Timeout!');
+      this.runWorkerFetchChainPoint(startPoint);
+    }, 100000);
+
     setTimeout(() => {
-      Promise.all([this.handlerGetAndCacheChainTipCardano(startPoint)]);
+      Promise.all([
+        this.handlerGetAndCacheChainTipCardano(startPoint, recoverTimeoutId),
+      ]);
     }, 1000);
   }
 
   async handlerGetAndCacheChainTipCardano(
     startPointFromDs?: IChainTipSchema,
+    recoverTimeoutId?: NodeJS.Timeout,
   ): Promise<void> {
     // wokerLogger.info('Fetch Chain Point From Cardano Starting...');
 
@@ -506,7 +514,7 @@ export class FetchService
           ttl: 8 * 60 * 60, // 1 day
         });
         await this.redisCaching.set('startPoint', value, {
-          ttl: 10 * 365 * 24 * 60 * 60
+          ttl: 10 * 365 * 24 * 60 * 60,
         });
 
         wokerLogger.info(
@@ -516,6 +524,7 @@ export class FetchService
     } catch (error) {
       wokerLogger.error(`Fetch Chain Point From Cardano ERR: ${error}`);
     } finally {
+      if (recoverTimeoutId) clearTimeout(recoverTimeoutId);
       this.runWorkerFetchChainPoint();
     }
   }
@@ -547,7 +556,7 @@ export class FetchService
       chainTipStart = JSON.parse(cached) as unknown as IChainTipSchema;
     }
     await this.redisCaching.set('startPoint', JSON.stringify(chainTipStart), {
-      ttl: 10 * 365 * 24 * 60 * 60
+      ttl: 10 * 365 * 24 * 60 * 60,
     });
 
     return chainTipStart;
