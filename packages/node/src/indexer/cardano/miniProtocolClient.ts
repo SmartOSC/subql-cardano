@@ -20,7 +20,10 @@ export class MiniProtocolClient {
   private chainSyncClient!: ChainSyncClient;
   private socket!: Socket;
 
-  constructor(private readonly endpoint: string, private readonly networkMagic: number) {}
+  constructor(
+    private readonly endpoint: string,
+    private readonly networkMagic: number,
+  ) {}
 
   async performHandshake(mplexer: Multiplexer, networkMagic: number) {
     return new Promise<void>((resolve, reject) => {
@@ -67,7 +70,7 @@ export class MiniProtocolClient {
     await redis.incr('num_of_socket');
     try {
       // connection harmoniclabs
-      const url = new URL(this.endpoint)
+      const url = new URL(this.endpoint);
       const socket = connect({
         host: url.hostname,
         port: Number(url.port || 3001),
@@ -89,7 +92,7 @@ export class MiniProtocolClient {
           return socket;
         },
       });
-      await this.performHandshake(mplexer, 42);
+      await this.performHandshake(mplexer, this.networkMagic);
       socket.on('close', () => {
         mplexer.close({
           closeSocket: true,
@@ -121,10 +124,10 @@ export class MiniProtocolClient {
   }> {
     await redis.incr('num_of_socket');
     try {
-      const url = new URL(this.endpoint)
+      const url = new URL(this.endpoint);
       const socket = connect({
         host: url.hostname,
-        port: Number(url.port || 3001),  
+        port: Number(url.port || 3001),
         keepAlive: false,
         keepAliveInitialDelay: 0,
         timeout: 10000,
@@ -143,7 +146,7 @@ export class MiniProtocolClient {
           return socket;
         },
       });
-      await this.performHandshake(mplexer, 42);
+      await this.performHandshake(mplexer, this.networkMagic);
       socket.on('close', () => {
         mplexer.close({
           closeSocket: true,

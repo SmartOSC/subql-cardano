@@ -15,19 +15,20 @@ schema:
   file: ./schema.graphql
 network:
   chainId: 'cardano'
-  networkMagic: 42
+  networkMagic: 2
   systemStart: 1725510170000
   slotLength: 1000
   # This endpoint must be a public non-pruned archive node
   # We recommend providing more than one endpoint for improved reliability, performance, and uptime
   # Public nodes may be rate limited, which can affect indexing speed
   # When developing your project we suggest getting a private API key
-  endpoint: ['ws://dev.cf-ibc-testnet-mithril-sidechain.metadata.dev.cf-deployments.org:3001']
+  endpoint: ['ws://99.80.89.242:3001']
 dataSources:
   - kind: cardano/Runtime
-    startBlock: 306199
-    startSlot: 1224478
-    startBlockHash: d146b9e0ef66a64a7433406cf3d5d91a486465a40b98ea01140c4c64c1b2eef3
+    startBlock: 2516332
+    startSlot: 60589344
+    startBlockHash: 1666BCA88995C6DB697DCEB506C7D3D36A502A248B9D43494D6AC2DF00D25529
+    systemStart: 1666656000000
     # startBlock: 244006
     # startSlot: 975352
     # startBlockHash: E470AF174FAE9EBD1B1855D456EE6A7C10085E50C51C451CAF2A69E8EFF4DDBB

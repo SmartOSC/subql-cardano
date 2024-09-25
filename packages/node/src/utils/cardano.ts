@@ -83,26 +83,71 @@ export async function fetchBlocksBatches(
  * To get around this we use blockHeights as hashes
  */
 export function cardanoBlockToHeader(blockHeader: MultiEraBlock): Header {
-  return {
-    blockHeight: Number(
-      blockHeader.as_babbage()?.header().header_body().block_number(),
-    ),
-    blockHash:
-      blockHeader
+  if (blockHeader.as_conway())
+    return {
+      blockHeight: Number(
+        blockHeader.as_conway()?.header().header_body().block_number(),
+      ),
+      blockHash:
+        blockHeader
+          .as_conway()
+          ?.header()
+          .header_body()
+          .block_body_hash()
+          .to_hex()
+          .toString() ?? '',
+      parentHash: blockHeader
+        .as_conway()
+        ?.header()
+        .header_body()
+        .prev_hash()
+        ?.to_hex()
+        .toString(),
+    };
+  if (blockHeader.as_alonzo())
+    return {
+      blockHeight: Number(
+        blockHeader.as_alonzo()?.header().body().block_number(),
+      ),
+      blockHash:
+        blockHeader
+          .as_alonzo()
+          ?.header()
+          .body()
+          .block_body_hash()
+          .to_hex()
+          .toString() ?? '',
+      parentHash: blockHeader
+        .as_alonzo()
+        ?.header()
+        .body()
+        .prev_hash()
+        ?.to_hex()
+        .toString(),
+    };
+  if (blockHeader.as_babbage())
+    return {
+      blockHeight: Number(
+        blockHeader.as_babbage()?.header().header_body().block_number(),
+      ),
+      blockHash:
+        blockHeader
+          .as_babbage()
+          ?.header()
+          .header_body()
+          .block_body_hash()
+          .to_hex()
+          .toString() ?? '',
+      parentHash: blockHeader
         .as_babbage()
         ?.header()
         .header_body()
-        .block_body_hash()
-        .to_hex()
-        .toString() ?? '',
-    parentHash: blockHeader
-      .as_babbage()
-      ?.header()
-      .header_body()
-      .prev_hash()
-      ?.to_hex()
-      .toString(),
-  };
+        .prev_hash()
+        ?.to_hex()
+        .toString(),
+    };
+
+  throw new Error('Unsupported block type');
 }
 
 export function formatBlockUtil<B extends CardanoBlockContent>(
