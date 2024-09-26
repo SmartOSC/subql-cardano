@@ -7,7 +7,7 @@ import {CardanoClientStateSchema} from '../../../client/cardano_pb/CardanoClient
 export const SpendConnectionRedeemerSchema = Data.Enum([
   Data.Object({
     ConnOpenAck: Data.Object({
-      counterparty_client_state: MithrilClientStateSchema,
+      counterparty_client_state: CardanoClientStateSchema,
       proof_try: MerkleProofSchema,
       proof_client: MerkleProofSchema,
       proof_height: HeightSchema,

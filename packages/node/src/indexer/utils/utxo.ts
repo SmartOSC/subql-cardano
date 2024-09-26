@@ -6,6 +6,14 @@ import {
   AlonzoFormatTxOut,
   BabbageFormatTxOut,
   MapAssetNameToCoin,
+  TransactionBodyList,
+  TransactionBody,
+  BabbageTransactionOutput,
+  TransactionOutput,
+  ConwayFormatTxOut,
+  AlonzoBlock,
+  AlonzoTransactionBodyList,
+  AlonzoTransactionBody,
 } from '@dcspark/cardano-multiplatform-multiera-lib-nodejs';
 import {
   AuthToken,
@@ -55,17 +63,33 @@ export class TxOutput {
 }
 
 export function extractTxOutput(
-  txBabbageBodies: BabbageTransactionBodyList,
+  transactionBodies:
+    | BabbageTransactionBodyList
+    | TransactionBodyList
+    | AlonzoTransactionBodyList,
 ): TxOutput[] {
   const outputs: TxOutput[] = [];
-  for (let idx = 0; idx < txBabbageBodies.len(); idx++) {
-    const body = txBabbageBodies.get(idx);
-    body.fee();
+  for (let idx = 0; idx < transactionBodies.len(); idx++) {
+    const body = transactionBodies.get(idx);
     const txOutputs = body.outputs();
     for (let subIdx = 0; subIdx < txOutputs.len(); subIdx++) {
       const output = txOutputs.get(subIdx);
-      const kind = output.kind();
       const hash = getTransactionHashFromTxBody(body);
+      if (output instanceof AlonzoFormatTxOut) {
+        outputs.push({
+          address: output?.address().to_hex() ?? '',
+          txIndex: idx,
+          hash: hash,
+          outputIndex: subIdx,
+          datum: output?.datum_hash()?.to_hex() ?? '',
+          fee: body.fee(),
+          datum_plutus: new PlutusData(),
+          assets: extractMultiAssets(output.amount().multi_asset()),
+        });
+        continue;
+      }
+
+      const kind = output.kind();
       switch (kind) {
         case 0: // Alonzo
           const alonzoTxOut =
@@ -84,19 +108,38 @@ export function extractTxOutput(
 
           break;
         case 1:
-          const babbageTxOut =
-            output.as_babbage_format_tx_out() as BabbageFormatTxOut;
-          outputs.push({
-            address: babbageTxOut.address().to_hex(),
-            hash: hash,
-            txIndex: idx,
-            outputIndex: subIdx,
-            datum: babbageTxOut.datum_option()?.as_datum()?.to_cbor_hex() ?? '',
-            datum_plutus:
-              babbageTxOut.datum_option()?.as_datum() ?? new PlutusData(),
-            fee: body.fee(),
-            assets: extractMultiAssets(babbageTxOut.amount().multi_asset()),
-          });
+          if (output instanceof BabbageTransactionOutput) {
+            const babbageTxOut =
+              output.as_babbage_format_tx_out() as BabbageFormatTxOut;
+            outputs.push({
+              address: babbageTxOut?.address().to_hex(),
+              hash: hash,
+              txIndex: idx,
+              outputIndex: subIdx,
+              datum:
+                babbageTxOut.datum_option()?.as_datum()?.to_cbor_hex() ?? '',
+              datum_plutus:
+                babbageTxOut.datum_option()?.as_datum() ?? new PlutusData(),
+              fee: body.fee(),
+              assets: extractMultiAssets(babbageTxOut.amount().multi_asset()),
+            });
+          }
+          if (output instanceof TransactionOutput) {
+            const conwayTxOut =
+              output.as_conway_format_tx_out() as ConwayFormatTxOut;
+            outputs.push({
+              address: conwayTxOut?.address().to_hex(),
+              hash: hash,
+              txIndex: idx,
+              outputIndex: subIdx,
+              datum:
+                conwayTxOut.datum_option()?.as_datum()?.to_cbor_hex() ?? '',
+              datum_plutus:
+                conwayTxOut.datum_option()?.as_datum() ?? new PlutusData(),
+              fee: body.fee(),
+              assets: extractMultiAssets(conwayTxOut.amount().multi_asset()),
+            });
+          }
           break;
       }
     }
@@ -128,9 +171,18 @@ export function extractMultiAssets(
 }
 
 export function getTransactionHashFromTxBody(
-  txBody: BabbageTransactionBody,
+  txBody: BabbageTransactionBody | TransactionBody | AlonzoTransactionBody,
 ): string {
-  return generateTransactionHash(txBody.to_cbor_bytes(), new Uint8Array());
+  if (txBody instanceof BabbageTransactionBody)
+    return generateTransactionHash(txBody.to_cbor_bytes(), new Uint8Array());
+
+  if (txBody instanceof TransactionBody)
+    return generateTransactionHash(txBody.to_cbor_bytes(), new Uint8Array());
+
+  if (txBody instanceof AlonzoTransactionBody)
+    return generateTransactionHash(txBody.to_cbor_bytes(), new Uint8Array());
+
+  return '';
 }
 
 export function generateTransactionHash(
