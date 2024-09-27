@@ -468,11 +468,9 @@ export class FetchService
   ): Promise<void> {
     // wokerLogger.info('Fetch Chain Point From Cardano Starting...');
 
+    let chainTipStart: IChainTipSchema =
+      await this.getCurrentStartPoint(startPointFromDs);
     try {
-      // TODO: load tip from datasource
-      let chainTipStart: IChainTipSchema =
-        await this.getCurrentStartPoint(startPointFromDs);
-
       const startPoint: IChainPoint = {
         blockHeader: {
           hash: fromHex(chainTipStart.point.blockHeader?.hash ?? ''),
@@ -497,6 +495,8 @@ export class FetchService
         : await this.apiService.api.requestNextPoint(scaleBatchSize);
 
       for (const next of nexts) {
+        if (BigInt(next.blockNo) < BigInt(chainTipStart.blockNo)) continue;
+
         chainTipStart = {
           point: {
             blockHeader: {
@@ -525,7 +525,7 @@ export class FetchService
       wokerLogger.error(`Fetch Chain Point From Cardano ERR: ${error}`);
     } finally {
       if (recoverTimeoutId) clearTimeout(recoverTimeoutId);
-      this.runWorkerFetchChainPoint();
+      this.runWorkerFetchChainPoint(chainTipStart);
     }
   }
 
