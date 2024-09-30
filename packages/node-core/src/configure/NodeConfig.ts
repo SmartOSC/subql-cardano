@@ -61,7 +61,7 @@ export type MinConfig = Partial<Omit<IConfig, 'subquery'>> & Pick<IConfig, 'subq
 
 const DEFAULT_CONFIG = {
   logLevel: 'info',
-  batchSize: 20,
+  batchSize: 10,
   // workers: 3,
   timeout: 900,
   blockTime: 6000,
@@ -321,7 +321,7 @@ export class NodeConfig<C extends IConfig = IConfig> implements IConfig {
     const defaultMonitorFileSize = 200;
     // If user passed though yarg, we will record monitor file by this size, no matter poi or not
     // if user didn't pass through yarg, we will record monitor file by this default size only when poi is enabled
-    return this._config.monitorFileSize ?? this._config.proofOfIndex ? defaultMonitorFileSize : 0;
+    return (this._config.monitorFileSize ?? this._config.proofOfIndex) ? defaultMonitorFileSize : 0;
   }
 
   merge(config: Partial<IConfig>): this {

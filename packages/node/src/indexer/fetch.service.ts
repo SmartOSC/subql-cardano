@@ -466,7 +466,7 @@ export class FetchService
     startPointFromDs?: IChainTipSchema,
     recoverTimeoutId?: NodeJS.Timeout,
   ): Promise<void> {
-    // wokerLogger.info('Fetch Chain Point From Cardano Starting...');
+    wokerLogger.info('Fetch Chain Point From Cardano Starting...');
 
     let chainTipStart: IChainTipSchema =
       await this.getCurrentStartPoint(startPointFromDs);
@@ -479,8 +479,11 @@ export class FetchService
       };
 
       // const MAX_SYNC_BATCH_SIZE = this.blockDispatcher.smartBatchSize;
+      const BLOCK_CONFIRMATIONS = 10;
       const MAX_SYNC_BATCH_SIZE = 30;
-      const latestHeight = this._latestHeight();
+      const latestHeight = this._latestHeight() - BLOCK_CONFIRMATIONS;
+      if (latestHeight <= 0) return;
+
       const latestBlockRange = latestHeight - Number(chainTipStart.blockNo);
       const scaleBatchSize =
         latestBlockRange > MAX_SYNC_BATCH_SIZE

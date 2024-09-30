@@ -1,13 +1,14 @@
+// SPDX-License-Identifier: GPL-3.0
+
+import { Socket } from 'net';
+import { Block } from '@dcspark/cardano-multiplatform-lib-nodejs';
 import {
-  Header,
-  backoffRetry,
-  delay,
-  getLogger,
-  isBackoffError,
-  timeout,
-} from '@subql/node-core';
-import { MiniProtocolClient } from './miniProtocolClient';
-import { fromHex, toHex } from '../utils/hex';
+  Cbor,
+  CborArray,
+  CborBytes,
+  CborTag,
+  CborUInt,
+} from '@harmoniclabs/cbor';
 import {
   BlockFetchBlock,
   BlockFetchClient,
@@ -21,17 +22,18 @@ import {
   IChainTip,
   Multiplexer,
 } from '@harmoniclabs/ouroboros-miniprotocols-ts';
-import { Block } from '@dcspark/cardano-multiplatform-lib-nodejs';
 import {
-  Cbor,
-  CborArray,
-  CborBytes,
-  CborTag,
-  CborUInt,
-} from '@harmoniclabs/cbor';
-import { createHash32 } from '../utils/utils';
-import { Socket } from 'net';
+  Header,
+  backoffRetry,
+  delay,
+  getLogger,
+  isBackoffError,
+  timeout,
+} from '@subql/node-core';
 import { redis } from '../../utils/cache';
+import { fromHex, toHex } from '../utils/hex';
+import { createHash32 } from '../utils/utils';
+import { MiniProtocolClient } from './miniProtocolClient';
 
 const logger = getLogger('CardanoClient');
 const MAX_RECONNECT_ATTEMPTS = 5;
@@ -88,7 +90,7 @@ export class CardanoClient {
     }
     throw new Error('Get Header Failed');
   }
-  getFinalizedHead(): Promise<Header> {
+  async getFinalizedHead(): Promise<Header> {
     return this.getHeader();
   }
 
@@ -114,7 +116,7 @@ export class CardanoClient {
   }
 
   async fetchBlockByPoint(chainPoint: IChainPoint): Promise<BlockFetchBlock> {
-    let { blockFetchClient, socket } =
+    const { blockFetchClient, socket } =
       await this.miniClient.connectBlockFetchClient();
     try {
       const block = await blockFetchClient.request(chainPoint);
@@ -139,6 +141,8 @@ export class CardanoClient {
       await this.miniClient.connectChainSyncClient();
     try {
       const intersect = await chainSyncClient.findIntersect([point]);
+      if (intersect instanceof ChainSyncIntersectNotFound) return [];
+
       const rollBackwards = await chainSyncClient.requestNext();
 
       const results: IChainTip[] = [];
@@ -148,6 +152,10 @@ export class CardanoClient {
         if (rollForwards) {
           results.push(rollForwards);
         }
+        // const rollForwards = await chainSyncClient.requestNext();
+        // if (rollForwards instanceof ChainSyncRollForward) {
+        //   results.push(this.extractChainPoint(rollForwards));
+        // }
       }
 
       return results;
@@ -159,36 +167,36 @@ export class CardanoClient {
     throw new Error('Request Next From Start Point failed: not found point');
   }
 
+  extractChainPoint(next: ChainSyncRollForward): IChainTip {
+    const nextData = next.data as CborArray;
+    const nextHeader = nextData.array[1] as CborTag;
+    const nextHeaderBytes = (nextHeader.data as CborBytes).bytes;
+    const blockHeaderCbor = Cbor.parse(nextHeaderBytes) as CborArray;
+    const blockHeaderBody = blockHeaderCbor.array[0];
+    const blockHash = createHash32(nextHeaderBytes);
+
+    const blockHeaderBodyArray = (blockHeaderBody as CborArray).array;
+    const [blockNoCbor, blockSlotCbor] = blockHeaderBodyArray;
+
+    return {
+      point: {
+        blockHeader: {
+          hash: fromHex(blockHash),
+          slotNumber: (blockSlotCbor as CborUInt).num,
+        },
+      },
+      blockNo: (blockNoCbor as CborUInt).num,
+    };
+  }
+
   async fetchNextRollForwardPoint(
     chainSyncClient: ChainSyncClient,
   ): Promise<IChainTip> {
-    const extractChainPoint = (next: ChainSyncRollForward): IChainTip => {
-      const nextData = next.data as CborArray;
-      const nextHeader = nextData.array[1] as CborTag;
-      let nextHeaderBytes = (nextHeader.data as CborBytes).bytes;
-      const blockHeaderCbor = Cbor.parse(nextHeaderBytes) as CborArray;
-      const blockHeaderBody = blockHeaderCbor.array[0];
-      const blockHash = createHash32(nextHeaderBytes);
-
-      const blockHeaderBodyArray = (blockHeaderBody as CborArray).array;
-      const [blockNoCbor, blockSlotCbor] = blockHeaderBodyArray;
-
-      return {
-        point: {
-          blockHeader: {
-            hash: fromHex(blockHash),
-            slotNumber: (blockSlotCbor as CborUInt).num,
-          },
-        },
-        blockNo: (blockNoCbor as CborUInt).num,
-      };
-    };
-
     return this.retryFetchNextRollForwardPoint(() => {
       const promiseFn = async (): Promise<IChainTip> => {
         const rollForwards = await chainSyncClient.requestNext();
         if (rollForwards instanceof ChainSyncRollForward) {
-          return extractChainPoint(rollForwards);
+          return this.extractChainPoint(rollForwards);
         }
         throw new Error('Fetch Next Roll Forward Point failed');
       };
